@@ -9,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',Roboto,system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
-:root{--bg:#f5f7fa;--card:#fff;--text:#1e293b;--muted:#64748b;--border:#e9edf2;--primary:#3b82f6;--success:#22c55e;--danger:#ef4444;--warning:#eab308;--ai:#8b5cf6;--grad:linear-gradient(135deg,#3b82f6 0%,#8b5cf6 50%,#ec4899 100%)}
+:root{--bg:#f5f7fa;--card:#fff;--text:#1e293b;--muted:#64748b;--border:#e9edf2;--primary:#3b82f6;--success:#22c55e;--danger:#ef4444;--warning:#eab308;--ai:#8b5cf6;--diet:#f59e0b;--grad:linear-gradient(135deg,#3b82f6 0%,#8b5cf6 50%,#ec4899 100%)}
 [data-theme="dark"]{--bg:#0f172a;--card:#1e293b;--text:#f1f5f9;--muted:#94a3b8;--border:#334155}
 html,body{overscroll-behavior:none}
 body{background:var(--bg);padding:10px;max-width:900px;margin:0 auto;color:var(--text);touch-action:manipulation;min-height:100dvh}
@@ -125,6 +125,17 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 .ai-summary{background:linear-gradient(135deg,rgba(139,92,246,.1),rgba(59,130,246,.1));border-radius:12px;padding:10px;margin-top:10px;border-left:4px solid var(--ai);font-size:.8rem;line-height:1.4}
 .ai-summary strong{color:var(--ai)}
 .ai-think{background:var(--bg);border-radius:10px;padding:8px;margin-top:6px;font-size:.72rem;color:var(--muted);font-style:italic;border-left:3px dashed var(--ai)}
+.diet-summary{background:linear-gradient(135deg,rgba(245,158,11,.1),rgba(234,88,12,.1));border-radius:12px;padding:10px;margin-top:10px;border-left:4px solid var(--diet);font-size:.78rem;line-height:1.4}
+.diet-summary strong{color:var(--diet)}
+.diet-macros{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.diet-macro{background:var(--card);border-radius:10px;padding:8px 6px;text-align:center;border:1px solid var(--border)}
+.diet-macro .macro-label{font-size:.65rem;color:var(--muted);text-transform:uppercase;font-weight:700}
+.diet-macro .macro-value{font-size:1rem;font-weight:800;margin-top:2px}
+.diet-macro.protein .macro-value{color:#ef4444}
+.diet-macro.carbs .macro-value{color:#3b82f6}
+.diet-macro.fats .macro-value{color:#f59e0b}
+.diet-tips{margin-top:8px;font-size:.72rem;color:var(--muted);line-height:1.5}
+.diet-tips li{margin-left:14px;margin-bottom:3px}
 .preview-day{background:var(--bg);border-radius:12px;padding:10px;margin-bottom:8px;border-left:4px solid var(--ai)}
 .preview-day-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-weight:700;color:var(--ai);flex-wrap:wrap;gap:4px;font-size:.82rem}
 .preview-exercise{display:grid;grid-template-columns:2fr 48px 48px auto;gap:4px;align-items:center;margin-bottom:5px;font-size:.8rem}
@@ -168,6 +179,9 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
   .btn-sm{padding:6px 9px;font-size:.72rem}
   select,input,textarea{font-size:16px;padding:8px 9px}
   .row{gap:5px}
+  .diet-macros{grid-template-columns:repeat(3,1fr);gap:4px}
+  .diet-macro{padding:6px 4px}
+  .diet-macro .macro-value{font-size:.9rem}
 }
 @media (max-width:380px){
   .hero-title{font-size:1.6rem;letter-spacing:1.5px}
@@ -251,7 +265,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 <div class="page-header"><div class="mini-brand"><i class="fas fa-bolt"></i><span class="mini-brand-text">FITNOVA</span><span style="color:var(--muted);font-size:.72rem;margin-left:4px">/ Suunnitelma</span></div></div>
 <div class="card ai-card">
 <div class="card-title"><i class="fas fa-robot" style="color:var(--ai)"></i> 🤖 AI-Treenisuunnittelija</div>
-<div class="text-muted mb-1" style="font-size:.75rem">Valitse parametrit – AI räätälöi ohjelman.</div>
+<div class="text-muted mb-1" style="font-size:.75rem">Valitse parametrit – AI räätälöi treeni- ja ruokasuunnitelman.</div>
 <div class="row"><label style="min-width:65px;font-weight:600;font-size:.8rem">Tavoite:</label>
 <select id="aiGoal" style="flex:1"><option value="massa">💪 Lihasmassa</option><option value="voima">🏋️ Voima</option><option value="kunto">🏃 Kunto</option><option value="kehonpaino">🤸 Kehonpaino</option><option value="urheilija">⚡ Urheilija</option><option value="yleiskunto">🌟 Yleiskunto</option></select></div>
 <div class="row"><label style="min-width:65px;font-weight:600;font-size:.8rem">Taso:</label>
@@ -262,6 +276,17 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 <select id="aiDays" style="flex:1"><option value="2">2 pv/vko</option><option value="3" selected>3 pv/vko</option><option value="4">4 pv/vko</option><option value="5">5 pv/vko</option><option value="6">6 pv/vko</option></select></div>
 <div class="row"><label style="min-width:65px;font-weight:600;font-size:.8rem">Kesto:</label>
 <select id="aiDuration" style="flex:1"><option value="45">Nopea (~45 min)</option><option value="60" selected>Normaali (~60 min)</option><option value="90">Pitkä (~90 min)</option></select></div>
+<div class="row"><label style="min-width:65px;font-weight:600;font-size:.8rem">Dieetti:</label>
+<select id="aiDiet" style="flex:1">
+<option value="none">🍽️ Ei erityistä</option>
+<option value="massa" selected>💪 Lihasmassa (+500 kcal)</option>
+<option value="cut">🔥 Laihdutus (-500 kcal)</option>
+<option value="keto">🥑 Keto (vähän hiilareita)</option>
+<option value="vegan">🌱 Kasvisruokavalio</option>
+<option value="mediterranean">🫒 Välimeren dieetti</option>
+<option value="clean">✨ Clean eating</option>
+<option value="highprotein">🥩 Korkea proteiini</option>
+</select></div>
 <div class="row"><label style="min-width:65px;font-weight:600;font-size:.8rem">Aloitus:</label><input type="date" id="aiStartDate" style="flex:1"></div>
 <div class="row"><label style="min-width:65px;font-weight:600;font-size:.8rem">Viikkoja:</label>
 <select id="aiWeeks" style="flex:1"><option value="1" selected>1 viikko</option><option value="2">2 viikkoa</option><option value="4">4 viikkoa</option></select></div>
@@ -389,13 +414,12 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 
 <script>
 (function(){
-  var STORAGE_KEY='fitnova_v18';
+  var STORAGE_KEY='fitnova_v19';
   var data=JSON.parse(localStorage.getItem(STORAGE_KEY))||{logs:{},plans:{},sleep:[],profile:{},theme:'light',timerSettings:{sound:'classic',volume:70}};
   if(!data.profile)data.profile={};
   if(!data.sleep)data.sleep=[];
   if(!data.timerSettings)data.timerSettings={sound:'classic',volume:70};
 
-  // ========== AUTOMAATTINEN TALLENNUS (ilman renderAll) ==========
   var saveTimeout=null;
   var saveIndicatorEl=null;
   
@@ -471,6 +495,124 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     });
   }
   migrateData();
+
+  // ========== DIEETTI-JÄRJESTELMÄ ==========
+  var DIET_PLANS={
+    none:{
+      name:'Ei erityistä',
+      icon:'🍽️',
+      calories:0,
+      macros:{protein:30,carbs:40,fats:30},
+      tips:['Syö monipuolisesti','Kuuntele kehoasi','Pidä säännölliset ateriavälit'],
+      preWorkout:'Normaali ateria 2-3h ennen treeniä',
+      postWorkout:'Proteiinipitoinen ateria tunnin sisällä'
+    },
+    massa:{
+      name:'Lihasmassa',
+      icon:'💪',
+      calories:500,
+      macros:{protein:35,carbs:45,fats:20},
+      tips:['Kaloriylijäämä +500 kcal/pvä','Proteiinia 1.6-2.2g/kg','Syö 5-6 ateriaa päivässä','Juo riittävästi vettä'],
+      preWorkout:'Hiilihydraatti+proteiini 1-2h ennen (esim. banaaniproteiinipirtelö)',
+      postWorkout:'Proteiini+hiilihydraatti 30min sisällä (esim. 40g proteiinia + 60g hiilareita)'
+    },
+    cut:{
+      name:'Laihdutus',
+      icon:'🔥',
+      calories:-500,
+      macros:{protein:40,carbs:30,fats:30},
+      tips:['Kalorivaje -500 kcal/pvä','Korkea proteiini lihasmassan säilyttämiseksi','Paljon vihanneksia','Vältä sokeria ja prosessoitua ruokaa'],
+      preWorkout:'Kevyt ateria 1-2h ennen (esim. proteiinipatukka)',
+      postWorkout:'Proteiinipitoinen ateria (vähän hiilareita)'
+    },
+    keto:{
+      name:'Keto',
+      icon:'🥑',
+      calories:0,
+      macros:{protein:25,carbs:5,fats:70},
+      tips:['Alle 50g hiilareita/pvä','Paljon terveellisiä rasvoja (avocado, pähkinät, oliiviöljy)','Kohtalainen proteiini','Sopeutuminen vie 2-4 viikkoa'],
+      preWorkout:'MCT-öljy tai kahvi 30min ennen',
+      postWorkout:'Proteiini+rasva (esim. lohi+avocado)'
+    },
+    vegan:{
+      name:'Kasvisruokavalio',
+      icon:'🌱',
+      calories:0,
+      macros:{protein:25,carbs:50,fats:25},
+      tips:['Yhdistele kasviproteiineja (pavut+viljat)','B12-lisä tarpeen','Rautapitoiset ruoat C-vitamiinin kanssa','Palkokasvit, tofu, tempeh, quinoa'],
+      preWorkout:'Hiilihydraatti 1-2h ennen (esim. kaurapuuro marjoilla)',
+      postWorkout:'Kasviproteiini+hiilihydraatti (esim. herne-proteiini+riisi)'
+    },
+    mediterranean:{
+      name:'Välimeren dieetti',
+      icon:'🫒',
+      calories:0,
+      macros:{protein:25,carbs:45,fats:30},
+      tips:['Oliiviöljy päärasvana','Paljon vihanneksia, hedelmiä, pähkinöitä','Kalaa 2-3x/viikko','Vähän punaista lihaa'],
+      preWorkout:'Kevyt ateria (esim. kreikkalainen jogurtti marjoilla)',
+      postWorkout:'Kala+kasvikset+oliiviöljy'
+    },
+    clean:{
+      name:'Clean eating',
+      icon:'✨',
+      calories:0,
+      macros:{protein:35,carbs:40,fats:25},
+      tips:['Vältä prosessoitua ruokaa','Syö kokonaisia raaka-aineita','Valmista ruoka itse','Lue tuoteselosteet'],
+      preWorkout:'Kokonaisruokaa 1-2h ennen (esim. kana+riisi)',
+      postWorkout:'Puhdas proteiini+hiilihydraatti (esim. kananmuna+kaura)'
+    },
+    highprotein:{
+      name:'Korkea proteiini',
+      icon:'🥩',
+      calories:0,
+      macros:{protein:45,carbs:35,fats:20},
+      tips:['2.2-3g proteiinia/kg paino','Proteiini jokaisessa aterias','Proteiinipatukat ja -juomat välipalana','Liha, kala, kananmuna, maitotuotteet'],
+      preWorkout:'Proteiinipitoinen ateria 1-2h ennen',
+      postWorkout:'Whey-proteiini 30-40g + banaani'
+    }
+  };
+
+  function getDietPlan(dietType,userWeight){
+    var plan=DIET_PLANS[dietType]||DIET_PLANS.none;
+    var weight=parseFloat(userWeight)||75;
+    
+    // Laske TDEE
+    var p=data.profile||{};
+    var tdee=2000; // oletus
+    if(p.weight&&p.height&&p.age&&p.gender){
+      var w=parseFloat(p.weight);
+      var h=parseFloat(p.height);
+      var age=parseFloat(p.age);
+      var bmr;
+      if(p.gender==='mies')bmr=10*w+6.25*h-5*age+5;
+      else if(p.gender==='nainen')bmr=10*w+6.25*h-5*age-161;
+      else bmr=10*w+6.25*h-5*age-78;
+      tdee=Math.round(bmr*(parseFloat(p.activity)||1.55));
+    }
+    
+    var targetCalories=tdee+plan.calories;
+    var proteinGrams=Math.round((targetCalories*plan.macros.protein/100)/4);
+    var carbsGrams=Math.round((targetCalories*plan.macros.carbs/100)/4);
+    var fatsGrams=Math.round((targetCalories*plan.macros.fats/100)/9);
+    
+    return {
+      name:plan.name,
+      icon:plan.icon,
+      targetCalories:targetCalories,
+      calories:plan.calories,
+      macros:{
+        protein:proteinGrams,
+        carbs:carbsGrams,
+        fats:fatsGrams,
+        proteinPct:plan.macros.protein,
+        carbsPct:plan.macros.carbs,
+        fatsPct:plan.macros.fats
+      },
+      tips:plan.tips,
+      preWorkout:plan.preWorkout,
+      postWorkout:plan.postWorkout
+    };
+  }
 
   var PROGRAMS={
     voima_koko_keho_2:{name:'Voima – Koko keho 2x',desc:'Klassinen 5x5 voimaohjelma',days:[
@@ -666,7 +808,37 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     if(!aiPreview){output.innerHTML='';return}
     var goalNames={massa:'💪 Lihasmassa',voima:'🏋️ Voima',kunto:'🏃 Kunto',kehonpaino:'🤸 Kehonpaino',urheilija:'⚡ Urheilija',yleiskunto:'🌟 Yleiskunto'};
     var levelNames={aloittelija:'Aloittelija',keskitaso:'Keskitaso',edistynyt:'Edistynyt'};
-    var html='<div class="ai-summary"><strong>✨ AI-ehdotus valmis:</strong> '+aiPreview.programName+'<br><div style="margin-top:6px;font-size:.75rem">📅 '+aiPreview.weeks+' viikko'+(aiPreview.weeks>1?'a':'')+' • '+aiPreview.days.length+' pv/vko • '+aiPreview.duration+' min/treeni<br>🎯 '+goalNames[aiPreview.goal]+' • '+levelNames[aiPreview.level]+'</div></div><div class="ai-think">💭 <strong>AI:n päättely:</strong> '+aiPreview.reasoning+'</div>';
+    var html='<div class="ai-summary"><strong>✨ AI-ehdotus valmis:</strong> '+aiPreview.programName+'<br><div style="margin-top:6px;font-size:.75rem">📅 '+aiPreview.weeks+' viikko'+(aiPreview.weeks>1?'a':'')+' • '+aiPreview.days.length+' pv/vko • '+aiPreview.duration+' min/treeni<br>🎯 '+goalNames[aiPreview.goal]+' • '+levelNames[aiPreview.level]+'</div></div>';
+    
+    // Dieetti-yhteenveto
+    var diet=aiPreview.diet;
+    html+='<div class="diet-summary"><strong>'+diet.icon+' '+diet.name+' -ruokavalio</strong>';
+    html+='<div style="margin-top:6px;font-size:.75rem">';
+    if(diet.calories>0)html+='📈 Kaloriylijäämä: <strong>+'+diet.calories+' kcal/pvä</strong><br>';
+    else if(diet.calories<0)html+='📉 Kalorivaje: <strong>'+diet.calories+' kcal/pvä</strong><br>';
+    html+='🔥 Tavoite: <strong>'+diet.targetCalories+' kcal/pvä</strong>';
+    html+='</div>';
+    
+    // Makrot
+    html+='<div class="diet-macros">';
+    html+='<div class="diet-macro protein"><div class="macro-label">Proteiini</div><div class="macro-value">'+diet.macros.protein+'g</div><div style="font-size:.65rem;color:var(--muted)">'+diet.macros.proteinPct+'%</div></div>';
+    html+='<div class="diet-macro carbs"><div class="macro-label">Hiilihydraatit</div><div class="macro-value">'+diet.macros.carbs+'g</div><div style="font-size:.65rem;color:var(--muted)">'+diet.macros.carbsPct+'%</div></div>';
+    html+='<div class="diet-macro fats"><div class="macro-label">Rasvat</div><div class="macro-value">'+diet.macros.fats+'g</div><div style="font-size:.65rem;color:var(--muted)">'+diet.macros.fatsPct+'%</div></div>';
+    html+='</div>';
+    
+    // Vinkit
+    html+='<div class="diet-tips"><strong style="color:var(--diet)">💡 Vinkit:</strong><ul>';
+    diet.tips.forEach(function(tip){html+='<li>'+tip+'</li>'});
+    html+='</ul></div>';
+    
+    // Treeniravitsemus
+    html+='<div class="diet-tips" style="margin-top:6px">';
+    html+='<strong style="color:var(--diet)">🏋️ Ennen treeniä:</strong> '+diet.preWorkout+'<br>';
+    html+='<strong style="color:var(--diet)">🥤 Treenin jälkeen:</strong> '+diet.postWorkout;
+    html+='</div>';
+    html+='</div>';
+    
+    html+='<div class="ai-think">💭 <strong>AI:n päättely:</strong> '+aiPreview.reasoning+'</div>';
     
     aiPreview.days.forEach(function(dayPlan,dayIdx){
       html+='<div class="preview-day"><div class="preview-day-header"><span><i class="fas fa-calendar-day"></i> '+formatDate(dayPlan.date)+'</span><button class="btn btn-danger btn-sm" data-action="remove-preview-day" data-day-idx="'+dayIdx+'"><i class="fas fa-times"></i></button></div>';
@@ -688,6 +860,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     var split=document.getElementById('aiSplit').value;
     var days=parseInt(document.getElementById('aiDays').value);
     var duration=document.getElementById('aiDuration').value;
+    var dietType=document.getElementById('aiDiet').value;
     var weeks=parseInt(document.getElementById('aiWeeks').value);
     var startDate=document.getElementById('aiStartDate').value||getToday();
     var btn=document.getElementById('generateAiBtn');
@@ -712,7 +885,8 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
               daysData.push({date:dateStr,entries:adjustedDays[d].map(function(e){return{exercise:e.ex,sets:String(e.s),reps:String(e.r)}})});
             }
           }
-          aiPreview={programName:program.name,goal:goal,level:level,split:split,duration:duration,weeks:weeks,days:daysData,reasoning:getAIReasoning(goal,level,split,days,program)};
+          var dietPlan=getDietPlan(dietType,(data.profile||{}).weight);
+          aiPreview={programName:program.name,goal:goal,level:level,split:split,duration:duration,dietType:dietType,diet:dietPlan,weeks:weeks,days:daysData,reasoning:getAIReasoning(goal,level,split,days,program)};
           renderAIPreview();
           btn.innerHTML='<i class="fas fa-magic"></i> Luo uusi AI-ehdotus';
           btn.disabled=false;
@@ -828,13 +1002,16 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     document.getElementById('volumeValue').innerText=settings.volume+'%';
   }
 
-  // ========== RENDER LOG ENTRIES ==========
   function renderLogEntries(dateStr){
     currentLogDate=dateStr;
     var banner=document.getElementById('planBanner');
     var plan=data.plans[dateStr];
     if(plan&&plan.isAiGenerated&&plan.programName){
-      banner.innerHTML='<div class="log-from-plan-banner"><i class="fas fa-robot"></i><div><strong>AI-ohjelma:</strong> '+plan.programName+'<br><span class="text-muted" style="font-size:.7rem">Merkitse jokainen sarja. Rasti = sarja tehty.</span></div></div>';
+      var dietInfo='';
+      if(plan.diet&&plan.diet.name){
+        dietInfo='<br><span style="font-size:.68rem;color:var(--diet)">'+plan.diet.icon+' '+plan.diet.name+' • '+plan.diet.targetCalories+' kcal • P:'+plan.diet.macros.protein+'g HH:'+plan.diet.macros.carbs+'g R:'+plan.diet.macros.fats+'g</span>';
+      }
+      banner.innerHTML='<div class="log-from-plan-banner"><i class="fas fa-robot"></i><div><strong>AI-ohjelma:</strong> '+plan.programName+dietInfo+'</div></div>';
     } else {
       banner.innerHTML='';
     }
@@ -873,7 +1050,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     else statusEl.innerText='⏳ Muutokset tallentuvat automaattisesti.';
   }
 
-  // ========== EVENT DELEGATION - KIRJAUS ==========
   document.getElementById('logEntries').addEventListener('input',function(e){
     var target=e.target;
     var dateStr=currentLogDate;
@@ -998,12 +1174,15 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
       div.className='plan-item';
       div.style.borderLeft='4px solid '+(plan.isAiGenerated?'var(--ai)':'var(--warning)');
       var text=plan.entries?plan.entries.map(function(e){return e.exercise+' ('+(e.sets||e.s||'')+' sarjaa)'}).join(', '):'Ei liikkeitä';
-      div.innerHTML='<div class="flex-between"><strong style="font-size:.85rem">'+formatDate(date)+(plan.isAiGenerated?' <i class="fas fa-robot" style="color:var(--ai)"></i>':'')+'</strong><div style="display:flex;gap:4px"><button class="btn btn-primary btn-sm goto-log" data-date="'+date+'"><i class="fas fa-pen"></i></button><button class="btn btn-danger btn-sm remove-plan" data-date="'+date+'"><i class="fas fa-times"></i></button></div></div><div class="text-muted" style="font-size:.75rem">'+text+'</div>';
+      var dietInfo='';
+      if(plan.diet&&plan.diet.name){
+        dietInfo=' <span style="color:var(--diet);font-size:.7rem">'+plan.diet.icon+' '+plan.diet.name+'</span>';
+      }
+      div.innerHTML='<div class="flex-between"><strong style="font-size:.85rem">'+formatDate(date)+(plan.isAiGenerated?' <i class="fas fa-robot" style="color:var(--ai)"></i>':'')+dietInfo+'</strong><div style="display:flex;gap:4px"><button class="btn btn-primary btn-sm goto-log" data-date="'+date+'"><i class="fas fa-pen"></i></button><button class="btn btn-danger btn-sm remove-plan" data-date="'+date+'"><i class="fas fa-times"></i></button></div></div><div class="text-muted" style="font-size:.75rem">'+text+'</div>';
       container.appendChild(div);
     });
   }
 
-  // Event delegation suunnitelmille
   document.getElementById('planList').addEventListener('click',function(e){
     var target=e.target;
     if(target.classList.contains('goto-log')){
@@ -1195,7 +1374,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     });
   }
 
-  // Event delegation unille
   document.getElementById('sleepList').addEventListener('click',function(e){
     if(e.target.classList.contains('remove-sleep')){
       data.sleep.splice(parseInt(e.target.dataset.idx),1);
@@ -1230,12 +1408,10 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     if(tabId==='tabTimer')updateTimerDisplay();
   }
 
-  // Tab-napit
   document.querySelectorAll('.tab-btn').forEach(function(btn){
     btn.addEventListener('click',function(){switchTab(btn.dataset.tab)});
   });
 
-  // AI preview event delegation
   document.getElementById('aiOutput').addEventListener('click',function(e){
     var target=e.target.closest('[data-action]');
     if(!target)return;
@@ -1244,7 +1420,14 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
       if(!aiPreview||aiPreview.days.length===0){alert('Ei hyväksyttäviä päiviä.');return}
       aiPreview.days.forEach(function(dayPlan){
         var entries=dayPlan.entries.map(function(e){return createEntry(e.exercise,e.sets,e.reps,'')});
-        data.plans[dayPlan.date]={entries:entries,isAiGenerated:true,programName:aiPreview.programName,goal:aiPreview.goal,level:aiPreview.level};
+        data.plans[dayPlan.date]={
+          entries:entries,
+          isAiGenerated:true,
+          programName:aiPreview.programName,
+          goal:aiPreview.goal,
+          level:aiPreview.level,
+          diet:aiPreview.diet
+        };
         data.logs[dayPlan.date]={entries:entries.map(function(e){return Object.assign({},e)}),done:false,missed:false,fromPlan:true,programName:aiPreview.programName};
       });
       var firstDate=aiPreview.days[0].date;
@@ -1394,7 +1577,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     renderCalendar();
   });
 
-  // Profiilin automaattinen tallennus
   ['profileName','profileAge','profileGender','profileWeight','profileHeight','profileGoal','profileActivity','profileExperience'].forEach(function(id){
     var el=document.getElementById(id);
     el.addEventListener('input',function(){
@@ -1527,7 +1709,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 
   document.getElementById('logDate').value=getToday();
   document.getElementById('planDate').value=getToday();
-  document.getElementById('foodDate').value=getToday();
   document.getElementById('sleepDate').value=getToday();
   document.getElementById('aiStartDate').value=getToday();
   document.documentElement.setAttribute('data-theme',data.theme||'light');
