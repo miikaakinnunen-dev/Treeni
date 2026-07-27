@@ -18,6 +18,7 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 input[type="number"]{-moz-appearance:textfield}
 .hero{background:var(--grad);border-radius:24px;padding:22px 16px;margin-bottom:12px;position:relative;overflow:hidden;color:#fff;text-align:center;box-shadow:0 8px 24px rgba(59,130,246,.25)}
 .hero::before{content:'';position:absolute;top:-50%;right:-20%;width:300px;height:300px;background:radial-gradient(circle,rgba(255,255,255,.2) 0%,transparent 70%);border-radius:50%}
+.hero::after{content:'';position:absolute;bottom:-50%;left:-20%;width:300px;height:300px;background:radial-gradient(circle,rgba(255,255,255,.15) 0%,transparent 70%);border-radius:50%}
 .hero-content{position:relative;z-index:1}
 .hero-logo i{font-size:1.8rem;filter:drop-shadow(0 4px 8px rgba(0,0,0,.2))}
 .hero-title{font-size:2.4rem;font-weight:900;letter-spacing:3px;background:linear-gradient(180deg,#fff 0%,rgba(255,255,255,.85) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1;margin-top:4px}
@@ -239,7 +240,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 <div id="logEntries" class="mt-1"></div>
 <button class="btn btn-primary w-full mt-1" id="addLogEntry"><i class="fas fa-plus"></i> Lisää liike</button>
 <div class="flex gap-1 mt-1">
-<button class="btn btn-success" id="saveWorkout" style="flex:1"><i class="fas fa-check"></i> Tallenna</button>
+<button class="btn btn-success" id="saveWorkout" style="flex:1"><i class="fas fa-check"></i> Valmis</button>
 <button class="btn btn-danger" id="missWorkout" style="flex:1"><i class="fas fa-times"></i> Missattu</button>
 </div>
 <div class="text-muted mt-1" id="logStatus">Ei tallennettuja treenejä.</div>
@@ -364,7 +365,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 <div class="row"><label style="min-width:65px;font-weight:600;font-size:.8rem">Tavoite:</label><select id="profileGoal" style="flex:1"><option value="">Valitse</option><option value="lihasmassa">Lihasmassan kasvatus</option><option value="laihtuminen">Laihtuminen</option><option value="yllapito">Painon ylläpito</option><option value="kunto">Kunnon parantaminen</option><option value="voima">Voiman lisäys</option></select></div>
 <div class="row"><label style="min-width:65px;font-weight:600;font-size:.8rem">Aktiivisuus:</label><select id="profileActivity" style="flex:1"><option value="1.2">Istumatyö</option><option value="1.375">Kevyt (1-3 pv/vko)</option><option value="1.55" selected>Kohtalainen (3-5 pv/vko)</option><option value="1.725">Korkea (6-7 pv/vko)</option><option value="1.9">Erittäin korkea</option></select></div>
 <div class="row"><label style="min-width:65px;font-weight:600;font-size:.8rem">Kokemus:</label><select id="profileExperience" style="flex:1"><option value="aloittelija">Aloittelija (&lt;1 v)</option><option value="keskitaso" selected>Keskitaso (1-3 v)</option><option value="edistynyt">Edistynyt (3+ v)</option></select></div>
-<button class="btn btn-primary w-full mt-1" id="saveProfile"><i class="fas fa-save"></i> Tallenna tiedot</button>
 </div>
 <div class="card">
 <div class="card-title"><i class="fas fa-calculator"></i> Lasketut arvot</div>
@@ -389,11 +389,43 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 
 <script>
 (function(){
-  var STORAGE_KEY='fitnova_v16';
+  var STORAGE_KEY='fitnova_v18';
   var data=JSON.parse(localStorage.getItem(STORAGE_KEY))||{logs:{},plans:{},sleep:[],profile:{},theme:'light',timerSettings:{sound:'classic',volume:70}};
   if(!data.profile)data.profile={};
   if(!data.sleep)data.sleep=[];
   if(!data.timerSettings)data.timerSettings={sound:'classic',volume:70};
+
+  // ========== AUTOMAATTINEN TALLENNUS (ilman renderAll) ==========
+  var saveTimeout=null;
+  var saveIndicatorEl=null;
+  
+  function autoSave(){
+    clearTimeout(saveTimeout);
+    saveTimeout=setTimeout(function(){
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+      showSaveIndicator();
+    },300);
+  }
+  
+  function saveNow(){
+    clearTimeout(saveTimeout);
+    localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+    showSaveIndicator();
+  }
+  
+  function showSaveIndicator(){
+    if(!saveIndicatorEl){
+      saveIndicatorEl=document.createElement('div');
+      saveIndicatorEl.style.cssText='position:fixed;bottom:20px;right:20px;background:#22c55e;color:#fff;padding:10px 16px;border-radius:20px;font-size:.8rem;font-weight:600;z-index:1000;opacity:0;transition:opacity .3s;box-shadow:0 4px 12px rgba(0,0,0,.2);pointer-events:none';
+      saveIndicatorEl.innerHTML='<i class="fas fa-check"></i> Tallennettu';
+      document.body.appendChild(saveIndicatorEl);
+    }
+    saveIndicatorEl.style.opacity='1';
+    clearTimeout(saveIndicatorEl._hideTimer);
+    saveIndicatorEl._hideTimer=setTimeout(function(){
+      saveIndicatorEl.style.opacity='0';
+    },1500);
+  }
 
   function toLocalDateStr(d){
     var y=d.getFullYear();
@@ -402,6 +434,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     return y+'-'+m+'-'+day;
   }
   function getToday(){return toLocalDateStr(new Date())}
+  
   function saveData(){
     localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
     renderAll();
@@ -537,6 +570,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
   }
 
   var currentWeekRef=getToday();
+  var currentLogDate=getToday();
   var DAY_NAMES=['Ma','Ti','Ke','To','Pe','La','Su'];
   var aiPreview=null;
 
@@ -635,80 +669,17 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     var html='<div class="ai-summary"><strong>✨ AI-ehdotus valmis:</strong> '+aiPreview.programName+'<br><div style="margin-top:6px;font-size:.75rem">📅 '+aiPreview.weeks+' viikko'+(aiPreview.weeks>1?'a':'')+' • '+aiPreview.days.length+' pv/vko • '+aiPreview.duration+' min/treeni<br>🎯 '+goalNames[aiPreview.goal]+' • '+levelNames[aiPreview.level]+'</div></div><div class="ai-think">💭 <strong>AI:n päättely:</strong> '+aiPreview.reasoning+'</div>';
     
     aiPreview.days.forEach(function(dayPlan,dayIdx){
-      html+='<div class="preview-day"><div class="preview-day-header"><span><i class="fas fa-calendar-day"></i> '+formatDate(dayPlan.date)+'</span><button class="btn btn-danger btn-sm remove-preview-day" data-day-idx="'+dayIdx+'"><i class="fas fa-times"></i></button></div>';
+      html+='<div class="preview-day"><div class="preview-day-header"><span><i class="fas fa-calendar-day"></i> '+formatDate(dayPlan.date)+'</span><button class="btn btn-danger btn-sm" data-action="remove-preview-day" data-day-idx="'+dayIdx+'"><i class="fas fa-times"></i></button></div>';
       dayPlan.entries.forEach(function(entry,exIdx){
         html+='<div class="preview-exercise"><select class="preview-ex-select" data-day="'+dayIdx+'" data-ex="'+exIdx+'">';
         ALL_EXERCISES.forEach(function(ex){html+='<option value="'+ex+'" '+(ex===entry.exercise?'selected':'')+'>'+ex+'</option>'});
-        html+='</select><input type="number" class="preview-sets" data-day="'+dayIdx+'" data-ex="'+exIdx+'" value="'+entry.sets+'" inputmode="numeric"><input type="number" class="preview-reps" data-day="'+dayIdx+'" data-ex="'+exIdx+'" value="'+entry.reps+'" inputmode="numeric"><button class="btn btn-danger btn-sm remove-preview-ex" data-day="'+dayIdx+'" data-ex="'+exIdx+'"><i class="fas fa-trash"></i></button></div>';
+        html+='</select><input type="number" class="preview-sets" data-day="'+dayIdx+'" data-ex="'+exIdx+'" value="'+entry.sets+'" inputmode="numeric"><input type="number" class="preview-reps" data-day="'+dayIdx+'" data-ex="'+exIdx+'" value="'+entry.reps+'" inputmode="numeric"><button class="btn btn-danger btn-sm" data-action="remove-preview-ex" data-day="'+dayIdx+'" data-ex="'+exIdx+'"><i class="fas fa-trash"></i></button></div>';
       });
-      html+='<button class="btn btn-sm mt-1 add-preview-ex" data-day="'+dayIdx+'"><i class="fas fa-plus"></i> Lisää liike</button></div>';
+      html+='<button class="btn btn-sm mt-1" data-action="add-preview-ex" data-day="'+dayIdx+'"><i class="fas fa-plus"></i> Lisää liike</button></div>';
     });
     
-    html+='<div class="preview-actions"><button class="btn btn-success" id="acceptAiPlan" style="flex:1"><i class="fas fa-check"></i> Hyväksy</button><button class="btn btn-warning" id="regenerateAiPlan" style="flex:1"><i class="fas fa-redo"></i> Uudelleen</button><button class="btn btn-danger" id="discardAiPlan" style="flex:1"><i class="fas fa-times"></i> Hylkää</button></div>';
+    html+='<div class="preview-actions"><button class="btn btn-success" data-action="accept-ai" style="flex:1"><i class="fas fa-check"></i> Hyväksy</button><button class="btn btn-warning" data-action="regen-ai" style="flex:1"><i class="fas fa-redo"></i> Uudelleen</button><button class="btn btn-danger" data-action="discard-ai" style="flex:1"><i class="fas fa-times"></i> Hylkää</button></div>';
     output.innerHTML=html;
-    
-    output.querySelectorAll('.preview-ex-select').forEach(function(sel){
-      sel.addEventListener('change',function(){
-        aiPreview.days[parseInt(this.dataset.day)].entries[parseInt(this.dataset.ex)].exercise=this.value;
-      });
-    });
-    output.querySelectorAll('.preview-sets').forEach(function(inp){
-      inp.addEventListener('change',function(){
-        aiPreview.days[parseInt(this.dataset.day)].entries[parseInt(this.dataset.ex)].sets=this.value;
-      });
-    });
-    output.querySelectorAll('.preview-reps').forEach(function(inp){
-      inp.addEventListener('change',function(){
-        aiPreview.days[parseInt(this.dataset.day)].entries[parseInt(this.dataset.ex)].reps=this.value;
-      });
-    });
-    output.querySelectorAll('.remove-preview-ex').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        var d=parseInt(this.dataset.day);
-        var e=parseInt(this.dataset.ex);
-        aiPreview.days[d].entries.splice(e,1);
-        if(aiPreview.days[d].entries.length===0)aiPreview.days.splice(d,1);
-        renderAIPreview();
-      });
-    });
-    output.querySelectorAll('.remove-preview-day').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        aiPreview.days.splice(parseInt(this.dataset.day),1);
-        renderAIPreview();
-      });
-    });
-    output.querySelectorAll('.add-preview-ex').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        aiPreview.days[parseInt(this.dataset.day)].entries.push({exercise:'Penkkipunnerrus',sets:'3',reps:'10'});
-        renderAIPreview();
-      });
-    });
-    
-    document.getElementById('acceptAiPlan').addEventListener('click',function(){
-      if(!aiPreview||aiPreview.days.length===0){alert('Ei hyväksyttäviä päiviä.');return}
-      aiPreview.days.forEach(function(dayPlan){
-        var entries=dayPlan.entries.map(function(e){return createEntry(e.exercise,e.sets,e.reps,'')});
-        data.plans[dayPlan.date]={entries:entries,isAiGenerated:true,programName:aiPreview.programName,goal:aiPreview.goal,level:aiPreview.level};
-        data.logs[dayPlan.date]={entries:entries.map(function(e){return Object.assign({},e)}),done:false,missed:false,fromPlan:true,programName:aiPreview.programName};
-      });
-      var firstDate=aiPreview.days[0].date;
-      document.getElementById('logDate').value=firstDate;
-      currentWeekRef=firstDate;
-      aiPreview=null;
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
-      switchTab('tabLog');
-    });
-    
-    document.getElementById('regenerateAiPlan').addEventListener('click',function(){
-      aiPreview=null;
-      generateAIPlan();
-    });
-    document.getElementById('discardAiPlan').addEventListener('click',function(){
-      if(confirm('Hylätäänkö AI-ehdotus?')){
-        aiPreview=null;
-        renderAIPreview();
-      }
-    });
   }
 
   function generateAIPlan(){
@@ -857,37 +828,9 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     document.getElementById('volumeValue').innerText=settings.volume+'%';
   }
 
-  function renderCalendar(){
-    var weekDays=getWeekDays(currentWeekRef);
-    var grid=document.getElementById('calendarGrid');
-    grid.innerHTML='';
-    DAY_NAMES.forEach(function(name){
-      var h=document.createElement('div');
-      h.className='cal-day-header';
-      h.innerText=name;
-      grid.appendChild(h);
-    });
-    document.getElementById('weekLabel').innerText=formatDate(weekDays[0])+' - '+formatDate(weekDays[6]);
-    var planned=0,done=0,missed=0;
-    weekDays.forEach(function(day){
-      var status=getStatus(day);
-      if(status==='plan')planned++;
-      else if(status==='done')done++;
-      else if(status==='missed')missed++;
-      var div=document.createElement('div');
-      div.className='cal-day'+(status==='plan'?' has-plan':status==='done'?' done':status==='missed'?' missed':'');
-      div.innerHTML='<span class="date-num">'+new Date(day+'T12:00:00').getDate()+'</span><span class="dot" style="background:'+(status==='plan'?'var(--warning)':status==='done'?'var(--success)':status==='missed'?'var(--danger)':'transparent')+'"></span>';
-      div.addEventListener('click',function(){
-        document.getElementById('logDate').value=day;
-        switchTab('tabLog');
-      });
-      grid.appendChild(div);
-    });
-    var total=weekDays.length;
-    document.getElementById('weekSummary').innerHTML='<div class="day-badge"><span class="dot dot-yellow"></span> Suunniteltu: '+planned+'</div><div class="day-badge"><span class="dot dot-green"></span> Tehty: '+done+'</div><div class="day-badge"><span class="dot dot-red"></span> Missattu: '+missed+'</div><div class="day-badge"><span class="dot dot-gray"></span> Vapaa: '+(total-planned-done-missed)+'</div>';
-  }
-
+  // ========== RENDER LOG ENTRIES ==========
   function renderLogEntries(dateStr){
+    currentLogDate=dateStr;
     var banner=document.getElementById('planBanner');
     var plan=data.plans[dateStr];
     if(plan&&plan.isAiGenerated&&plan.programName){
@@ -910,10 +853,10 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
         var completedSets=entry.setRows.filter(function(sr){return sr.done}).length;
         var html='<div class="exercise-header"><select class="ex-name-select" data-idx="'+idx+'">';
         ALL_EXERCISES.forEach(function(e){html+='<option value="'+e+'" '+(e===entry.exercise?'selected':'')+'>'+e+'</option>'});
-        html+='</select><div class="sets-control"><label>Sarjat</label><input type="number" class="ex-sets-input" data-idx="'+idx+'" value="'+entry.sets+'" min="1" max="20" inputmode="numeric"></div><button class="btn btn-danger btn-sm remove-ex" data-idx="'+idx+'"><i class="fas fa-trash"></i></button></div>';
+        html+='</select><div class="sets-control"><label>Sarjat</label><input type="number" class="ex-sets-input" data-idx="'+idx+'" value="'+entry.sets+'" min="1" max="20" inputmode="numeric"></div><button class="btn btn-danger btn-sm" data-action="remove-ex" data-idx="'+idx+'"><i class="fas fa-trash"></i></button></div>';
         html+='<div class="set-rows-header"><span>#</span><span>Toistot</span><span>Paino</span><span>✓</span></div>';
         entry.setRows.forEach(function(sr,setIdx){
-          html+='<div class="set-row '+(sr.done?'completed':'')+'"><span class="set-num">'+(setIdx+1)+'</span><input type="number" class="set-reps" data-idx="'+idx+'" data-set="'+setIdx+'" value="'+(sr.reps||'')+'" placeholder="–" inputmode="numeric"><input type="number" step="0.5" class="set-weight" data-idx="'+idx+'" data-set="'+setIdx+'" value="'+(sr.weight||'')+'" placeholder="–" inputmode="decimal"><button class="set-check '+(sr.done?'checked':'')+'" data-idx="'+idx+'" data-set="'+setIdx+'"><i class="fas fa-check"></i></button></div>';
+          html+='<div class="set-row '+(sr.done?'completed':'')+'"><span class="set-num">'+(setIdx+1)+'</span><input type="number" class="set-reps" data-idx="'+idx+'" data-set="'+setIdx+'" value="'+(sr.reps||'')+'" placeholder="–" inputmode="numeric"><input type="number" step="0.5" class="set-weight" data-idx="'+idx+'" data-set="'+setIdx+'" value="'+(sr.weight||'')+'" placeholder="–" inputmode="decimal"><button class="set-check '+(sr.done?'checked':'')+'" data-action="toggle-set" data-idx="'+idx+'" data-set="'+setIdx+'"><i class="fas fa-check"></i></button></div>';
         });
         html+='<div class="exercise-comment"><input type="text" class="ex-comment" data-idx="'+idx+'" value="'+(entry.comment||'')+'" placeholder="💬 Kommentti"></div>';
         html+='<div class="exercise-summary"><span>📊 '+Math.round(totalVol)+' kg</span><span>✅ '+completedSets+'/'+entry.sets+'</span></div>';
@@ -921,66 +864,127 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
         container.appendChild(div);
       });
     }
-    container.querySelectorAll('.ex-name-select').forEach(function(sel){
-      sel.addEventListener('change',function(){
-        data.logs[dateStr].entries[parseInt(this.dataset.idx)].exercise=this.value;
-        saveData();
-      });
-    });
-    container.querySelectorAll('.ex-sets-input').forEach(function(inp){
-      inp.addEventListener('change',function(){
-        var idx=parseInt(this.dataset.idx);
-        var entry=data.logs[dateStr].entries[idx];
-        var newSets=Math.max(1,parseInt(this.value)||1);
-        var oldRows=entry.setRows||[];
-        var newRows=[];
-        for(var i=0;i<newSets;i++){
-          if(i<oldRows.length){newRows.push(Object.assign({},oldRows[i]))}
-          else{var prev=oldRows.length>0?oldRows[oldRows.length-1]:{reps:'',weight:'',done:false};newRows.push({reps:prev.reps||'',weight:prev.weight||'',done:false})}
-        }
-        entry.sets=newSets;
-        entry.setRows=newRows;
-        saveData();
-      });
-    });
-    container.querySelectorAll('.set-reps').forEach(function(inp){
-      inp.addEventListener('change',function(){
-        data.logs[dateStr].entries[parseInt(this.dataset.idx)].setRows[parseInt(this.dataset.set)].reps=this.value;
-        saveData();
-      });
-    });
-    container.querySelectorAll('.set-weight').forEach(function(inp){
-      inp.addEventListener('change',function(){
-        data.logs[dateStr].entries[parseInt(this.dataset.idx)].setRows[parseInt(this.dataset.set)].weight=this.value;
-        saveData();
-      });
-    });
-    container.querySelectorAll('.set-check').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        var sr=data.logs[dateStr].entries[parseInt(this.dataset.idx)].setRows[parseInt(this.dataset.set)];
-        sr.done=!sr.done;
-        saveData();
-      });
-    });
-    container.querySelectorAll('.ex-comment').forEach(function(inp){
-      inp.addEventListener('change',function(){
-        data.logs[dateStr].entries[parseInt(this.dataset.idx)].comment=this.value;
-        saveData();
-      });
-    });
-    container.querySelectorAll('.remove-ex').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        data.logs[dateStr].entries.splice(parseInt(this.dataset.idx),1);
-        if(data.logs[dateStr].entries.length===0)delete data.logs[dateStr];
-        saveData();
-      });
-    });
+    
     var log=data.logs[dateStr];
     var statusEl=document.getElementById('logStatus');
     if(!log||!log.entries||log.entries.length===0)statusEl.innerText='Ei tallennettuja treenejä.';
     else if(log.done)statusEl.innerText='✅ Treeni valmis!';
     else if(log.missed)statusEl.innerText='❌ Treeni missattu.';
-    else statusEl.innerText='⏳ Luonnos tallennettu. Paina "Tallenna" kun treeni on tehty.';
+    else statusEl.innerText='⏳ Muutokset tallentuvat automaattisesti.';
+  }
+
+  // ========== EVENT DELEGATION - KIRJAUS ==========
+  document.getElementById('logEntries').addEventListener('input',function(e){
+    var target=e.target;
+    var dateStr=currentLogDate;
+    if(!data.logs[dateStr])return;
+    
+    if(target.classList.contains('set-reps')){
+      var idx=parseInt(target.dataset.idx);
+      var set=parseInt(target.dataset.set);
+      if(data.logs[dateStr].entries[idx]&&data.logs[dateStr].entries[idx].setRows[set]){
+        data.logs[dateStr].entries[idx].setRows[set].reps=target.value;
+        autoSave();
+      }
+    } else if(target.classList.contains('set-weight')){
+      var idx=parseInt(target.dataset.idx);
+      var set=parseInt(target.dataset.set);
+      if(data.logs[dateStr].entries[idx]&&data.logs[dateStr].entries[idx].setRows[set]){
+        data.logs[dateStr].entries[idx].setRows[set].weight=target.value;
+        autoSave();
+      }
+    } else if(target.classList.contains('ex-comment')){
+      var idx=parseInt(target.dataset.idx);
+      if(data.logs[dateStr].entries[idx]){
+        data.logs[dateStr].entries[idx].comment=target.value;
+        autoSave();
+      }
+    }
+  });
+
+  document.getElementById('logEntries').addEventListener('change',function(e){
+    var target=e.target;
+    var dateStr=currentLogDate;
+    if(!data.logs[dateStr])return;
+    
+    if(target.classList.contains('ex-name-select')){
+      var idx=parseInt(target.dataset.idx);
+      if(data.logs[dateStr].entries[idx]){
+        data.logs[dateStr].entries[idx].exercise=target.value;
+        autoSave();
+      }
+    } else if(target.classList.contains('ex-sets-input')){
+      var idx=parseInt(target.dataset.idx);
+      var entry=data.logs[dateStr].entries[idx];
+      if(!entry)return;
+      var newSets=Math.max(1,parseInt(target.value)||1);
+      var oldRows=entry.setRows||[];
+      var newRows=[];
+      for(var i=0;i<newSets;i++){
+        if(i<oldRows.length){newRows.push(Object.assign({},oldRows[i]))}
+        else{var prev=oldRows.length>0?oldRows[oldRows.length-1]:{reps:'',weight:'',done:false};newRows.push({reps:prev.reps||'',weight:prev.weight||'',done:false})}
+      }
+      entry.sets=newSets;
+      entry.setRows=newRows;
+      saveNow();
+      renderLogEntries(dateStr);
+    }
+  });
+
+  document.getElementById('logEntries').addEventListener('click',function(e){
+    var target=e.target.closest('[data-action]');
+    if(!target)return;
+    var action=target.dataset.action;
+    var dateStr=currentLogDate;
+    if(!data.logs[dateStr])return;
+    
+    if(action==='remove-ex'){
+      var idx=parseInt(target.dataset.idx);
+      data.logs[dateStr].entries.splice(idx,1);
+      if(data.logs[dateStr].entries.length===0)delete data.logs[dateStr];
+      saveNow();
+      renderLogEntries(dateStr);
+    } else if(action==='toggle-set'){
+      var idx=parseInt(target.dataset.idx);
+      var set=parseInt(target.dataset.set);
+      if(data.logs[dateStr].entries[idx]&&data.logs[dateStr].entries[idx].setRows[set]){
+        var sr=data.logs[dateStr].entries[idx].setRows[set];
+        sr.done=!sr.done;
+        saveNow();
+        renderLogEntries(dateStr);
+      }
+    }
+  });
+
+  function renderCalendar(){
+    var weekDays=getWeekDays(currentWeekRef);
+    var grid=document.getElementById('calendarGrid');
+    grid.innerHTML='';
+    DAY_NAMES.forEach(function(name){
+      var h=document.createElement('div');
+      h.className='cal-day-header';
+      h.innerText=name;
+      grid.appendChild(h);
+    });
+    document.getElementById('weekLabel').innerText=formatDate(weekDays[0])+' - '+formatDate(weekDays[6]);
+    var planned=0,done=0,missed=0;
+    weekDays.forEach(function(day){
+      var status=getStatus(day);
+      if(status==='plan')planned++;
+      else if(status==='done')done++;
+      else if(status==='missed')missed++;
+      var div=document.createElement('div');
+      div.className='cal-day'+(status==='plan'?' has-plan':status==='done'?' done':status==='missed'?' missed':'');
+      div.innerHTML='<span class="date-num">'+new Date(day+'T12:00:00').getDate()+'</span><span class="dot" style="background:'+(status==='plan'?'var(--warning)':status==='done'?'var(--success)':status==='missed'?'var(--danger)':'transparent')+'"></span>';
+      div.addEventListener('click',function(){
+        document.getElementById('logDate').value=day;
+        currentLogDate=day;
+        switchTab('tabLog');
+      });
+      grid.appendChild(div);
+    });
+    var total=weekDays.length;
+    document.getElementById('weekSummary').innerHTML='<div class="day-badge"><span class="dot dot-yellow"></span> Suunniteltu: '+planned+'</div><div class="day-badge"><span class="dot dot-green"></span> Tehty: '+done+'</div><div class="day-badge"><span class="dot dot-red"></span> Missattu: '+missed+'</div><div class="day-badge"><span class="dot dot-gray"></span> Vapaa: '+(total-planned-done-missed)+'</div>';
   }
 
   function renderPlans(){
@@ -997,22 +1001,25 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
       div.innerHTML='<div class="flex-between"><strong style="font-size:.85rem">'+formatDate(date)+(plan.isAiGenerated?' <i class="fas fa-robot" style="color:var(--ai)"></i>':'')+'</strong><div style="display:flex;gap:4px"><button class="btn btn-primary btn-sm goto-log" data-date="'+date+'"><i class="fas fa-pen"></i></button><button class="btn btn-danger btn-sm remove-plan" data-date="'+date+'"><i class="fas fa-times"></i></button></div></div><div class="text-muted" style="font-size:.75rem">'+text+'</div>';
       container.appendChild(div);
     });
-    container.querySelectorAll('.remove-plan').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        var date=this.dataset.date;
-        delete data.plans[date];
-        if(data.logs[date]&&data.logs[date].fromPlan)delete data.logs[date];
-        saveData();
-      });
-    });
-    container.querySelectorAll('.goto-log').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        var date=this.dataset.date;
-        document.getElementById('logDate').value=date;
-        switchTab('tabLog');
-      });
-    });
   }
+
+  // Event delegation suunnitelmille
+  document.getElementById('planList').addEventListener('click',function(e){
+    var target=e.target;
+    if(target.classList.contains('goto-log')){
+      var date=target.dataset.date;
+      document.getElementById('logDate').value=date;
+      currentLogDate=date;
+      switchTab('tabLog');
+    } else if(target.classList.contains('remove-plan')){
+      var date=target.dataset.date;
+      delete data.plans[date];
+      if(data.logs[date]&&data.logs[date].fromPlan)delete data.logs[date];
+      saveNow();
+      renderPlans();
+      renderCalendar();
+    }
+  });
 
   function renderTemplates(){
     var container=document.getElementById('templateList');
@@ -1033,8 +1040,9 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
               data.logs[date]={entries:entries.map(function(e){return Object.assign({},e)}),done:false,missed:false,fromPlan:true};
             }
           });
-          saveData();
+          saveNow();
           document.getElementById('logDate').value=weekDays[0];
+          currentLogDate=weekDays[0];
           switchTab('tabLog');
         }
       });
@@ -1185,17 +1193,20 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
       div.innerHTML='<div class="flex-between"><strong style="font-size:.85rem">'+formatDate(item.date)+'</strong><button class="btn btn-danger btn-sm remove-sleep" data-idx="'+origIdx+'"><i class="fas fa-times"></i></button></div><div class="text-muted" style="font-size:.8rem">'+item.hours+'h - Laatu: '+'⭐'.repeat(item.quality)+'</div>';
       container.appendChild(div);
     });
-    container.querySelectorAll('.remove-sleep').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        data.sleep.splice(parseInt(this.dataset.idx),1);
-        saveData();
-      });
-    });
   }
+
+  // Event delegation unille
+  document.getElementById('sleepList').addEventListener('click',function(e){
+    if(e.target.classList.contains('remove-sleep')){
+      data.sleep.splice(parseInt(e.target.dataset.idx),1);
+      saveNow();
+      renderSleep();
+    }
+  });
 
   function renderAll(){
     renderCalendar();
-    renderLogEntries(document.getElementById('logDate').value||getToday());
+    renderLogEntries(currentLogDate);
     renderPlans();
     renderTemplates();
     renderStats();
@@ -1211,22 +1222,84 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     document.getElementById(tabId).classList.add('active');
     document.querySelector('.tab-btn[data-tab="'+tabId+'"]').classList.add('active');
     window.scrollTo({top:0,behavior:'smooth'});
-    if(tabId==='tabLog')renderLogEntries(document.getElementById('logDate').value||getToday());
-    if(tabId==='tabPlan')renderPlans();
+    if(tabId==='tabLog')renderLogEntries(currentLogDate);
+    if(tabId==='tabPlan'){renderPlans();renderTemplates()}
     if(tabId==='tabStats')renderStats();
     if(tabId==='tabProfile'){renderProfile();renderSleep()}
     if(tabId==='tabCalendar')renderCalendar();
     if(tabId==='tabTimer')updateTimerDisplay();
   }
 
+  // Tab-napit
   document.querySelectorAll('.tab-btn').forEach(function(btn){
     btn.addEventListener('click',function(){switchTab(btn.dataset.tab)});
+  });
+
+  // AI preview event delegation
+  document.getElementById('aiOutput').addEventListener('click',function(e){
+    var target=e.target.closest('[data-action]');
+    if(!target)return;
+    var action=target.dataset.action;
+    if(action==='accept-ai'){
+      if(!aiPreview||aiPreview.days.length===0){alert('Ei hyväksyttäviä päiviä.');return}
+      aiPreview.days.forEach(function(dayPlan){
+        var entries=dayPlan.entries.map(function(e){return createEntry(e.exercise,e.sets,e.reps,'')});
+        data.plans[dayPlan.date]={entries:entries,isAiGenerated:true,programName:aiPreview.programName,goal:aiPreview.goal,level:aiPreview.level};
+        data.logs[dayPlan.date]={entries:entries.map(function(e){return Object.assign({},e)}),done:false,missed:false,fromPlan:true,programName:aiPreview.programName};
+      });
+      var firstDate=aiPreview.days[0].date;
+      document.getElementById('logDate').value=firstDate;
+      currentLogDate=firstDate;
+      currentWeekRef=firstDate;
+      aiPreview=null;
+      saveNow();
+      switchTab('tabLog');
+    } else if(action==='regen-ai'){
+      aiPreview=null;
+      generateAIPlan();
+    } else if(action==='discard-ai'){
+      if(confirm('Hylätäänkö AI-ehdotus?')){
+        aiPreview=null;
+        renderAIPreview();
+      }
+    } else if(action==='remove-preview-day'){
+      var d=parseInt(target.dataset.dayIdx);
+      aiPreview.days.splice(d,1);
+      renderAIPreview();
+    } else if(action==='remove-preview-ex'){
+      var d=parseInt(target.dataset.day);
+      var ex=parseInt(target.dataset.ex);
+      aiPreview.days[d].entries.splice(ex,1);
+      if(aiPreview.days[d].entries.length===0)aiPreview.days.splice(d,1);
+      renderAIPreview();
+    } else if(action==='add-preview-ex'){
+      var d=parseInt(target.dataset.day);
+      aiPreview.days[d].entries.push({exercise:'Penkkipunnerrus',sets:'3',reps:'10'});
+      renderAIPreview();
+    }
+  });
+
+  document.getElementById('aiOutput').addEventListener('change',function(e){
+    var target=e.target;
+    if(target.classList.contains('preview-ex-select')){
+      var d=parseInt(target.dataset.day);
+      var ex=parseInt(target.dataset.ex);
+      aiPreview.days[d].entries[ex].exercise=target.value;
+    } else if(target.classList.contains('preview-sets')){
+      var d=parseInt(target.dataset.day);
+      var ex=parseInt(target.dataset.ex);
+      aiPreview.days[d].entries[ex].sets=target.value;
+    } else if(target.classList.contains('preview-reps')){
+      var d=parseInt(target.dataset.day);
+      var ex=parseInt(target.dataset.ex);
+      aiPreview.days[d].entries[ex].reps=target.value;
+    }
   });
 
   document.getElementById('themeToggle').addEventListener('click',function(){
     data.theme=data.theme==='dark'?'light':'dark';
     document.documentElement.setAttribute('data-theme',data.theme);
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+    autoSave();
   });
 
   document.getElementById('exportBtn').addEventListener('click',function(){
@@ -1278,54 +1351,65 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
   });
 
   document.getElementById('logDate').addEventListener('change',function(e){
+    currentLogDate=e.target.value;
     renderLogEntries(e.target.value);
   });
 
   document.getElementById('addLogEntry').addEventListener('click',function(){
-    var dateStr=document.getElementById('logDate').value||getToday();
+    var dateStr=currentLogDate;
     if(!data.logs[dateStr])data.logs[dateStr]={entries:[]};
     data.logs[dateStr].entries.push(createEntry('Penkkipunnerrus',3,'',''));
-    saveData();
+    saveNow();
+    renderLogEntries(dateStr);
   });
 
   document.getElementById('saveWorkout').addEventListener('click',function(){
-    var dateStr=document.getElementById('logDate').value||getToday();
+    var dateStr=currentLogDate;
     if(data.logs[dateStr]&&data.logs[dateStr].entries&&data.logs[dateStr].entries.length>0){
       data.logs[dateStr].done=true;
       data.logs[dateStr].missed=false;
-      saveData();
+      saveNow();
+      renderLogEntries(dateStr);
+      renderCalendar();
     }
   });
 
   document.getElementById('missWorkout').addEventListener('click',function(){
-    var dateStr=document.getElementById('logDate').value||getToday();
+    var dateStr=currentLogDate;
     if(confirm('Merkitäänkö missatuksi?')){
       data.logs[dateStr]=data.logs[dateStr]||{};
       data.logs[dateStr].missed=true;
       data.logs[dateStr].done=false;
-      saveData();
+      saveNow();
+      renderLogEntries(dateStr);
+      renderCalendar();
     }
   });
 
   document.getElementById('addPlan').addEventListener('click',function(){
     var dateStr=document.getElementById('planDate').value||getToday();
     data.plans[dateStr]={entries:[],isAiGenerated:false};
-    saveData();
+    saveNow();
+    renderPlans();
+    renderCalendar();
   });
 
-  document.getElementById('saveProfile').addEventListener('click',function(){
-    data.profile={
-      name:document.getElementById('profileName').value,
-      age:document.getElementById('profileAge').value,
-      gender:document.getElementById('profileGender').value,
-      weight:document.getElementById('profileWeight').value,
-      height:document.getElementById('profileHeight').value,
-      goal:document.getElementById('profileGoal').value,
-      activity:document.getElementById('profileActivity').value,
-      experience:document.getElementById('profileExperience').value
-    };
-    saveData();
-    alert('✅ Tiedot tallennettu!');
+  // Profiilin automaattinen tallennus
+  ['profileName','profileAge','profileGender','profileWeight','profileHeight','profileGoal','profileActivity','profileExperience'].forEach(function(id){
+    var el=document.getElementById(id);
+    el.addEventListener('input',function(){
+      var key=id.replace('profile','').toLowerCase();
+      data.profile[key]=this.value;
+      autoSave();
+    });
+    el.addEventListener('change',function(){
+      var key=id.replace('profile','').toLowerCase();
+      data.profile[key]=this.value;
+      autoSave();
+      if(['profileWeight','profileHeight','profileAge','profileGender','profileActivity','profileGoal'].indexOf(id)!==-1){
+        renderProfile();
+      }
+    });
   });
 
   document.getElementById('addSleep').addEventListener('click',function(){
@@ -1336,7 +1420,8 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
       if(!data.sleep)data.sleep=[];
       data.sleep.push({date:dateStr,hours:hours,quality:quality});
       document.getElementById('sleepHours').value='';
-      saveData();
+      saveNow();
+      renderSleep();
     }
   });
 
@@ -1404,7 +1489,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
   document.querySelectorAll('.sound-btn').forEach(function(btn){
     btn.addEventListener('click',function(){
       data.timerSettings.sound=this.dataset.sound;
-      localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+      autoSave();
       updateSoundUI();
       playSound(this.dataset.sound,data.timerSettings.volume);
     });
@@ -1413,7 +1498,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
   document.getElementById('volumeSlider').addEventListener('input',function(){
     data.timerSettings.volume=parseInt(this.value);
     document.getElementById('volumeValue').innerText=this.value+'%';
-    localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+    autoSave();
   });
 
   document.getElementById('testSoundBtn').addEventListener('click',function(){
@@ -1438,8 +1523,11 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     }
   }
 
+  document.getElementById('statExerciseSelect').addEventListener('change',function(){renderStats()});
+
   document.getElementById('logDate').value=getToday();
   document.getElementById('planDate').value=getToday();
+  document.getElementById('foodDate').value=getToday();
   document.getElementById('sleepDate').value=getToday();
   document.getElementById('aiStartDate').value=getToday();
   document.documentElement.setAttribute('data-theme',data.theme||'light');
