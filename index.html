@@ -27,7 +27,7 @@ input[type="number"]{-moz-appearance:textfield}
 .mini-brand i{background:var(--grad);color:#fff;padding:5px;border-radius:8px;font-size:.8rem}
 .mini-brand-text{background:var(--grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
 .icon-btn{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;padding:0;border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;flex-shrink:0}
-.tab-bar{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;background:var(--card);padding:5px;border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);margin-bottom:12px;position:sticky;top:4px;z-index:100}
+.tab-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;background:var(--card);padding:5px;border-radius:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);margin-bottom:12px;position:sticky;top:4px;z-index:100}
 .tab-btn{padding:7px 2px;border:none;background:transparent;border-radius:14px;font-weight:600;font-size:.58rem;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-height:46px}
 .tab-btn i{font-size:.85rem}
 .tab-btn.active{background:var(--text);color:var(--card);box-shadow:0 2px 6px rgba(0,0,0,.15)}
@@ -85,7 +85,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 .stat-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;background:var(--bg);border-radius:18px;padding:10px}
 .stat-item{text-align:center;background:var(--card);border-radius:12px;padding:8px 4px}
 .stat-number{font-weight:700;font-size:1.25rem}
-.food-entry{background:var(--bg);border-radius:16px;padding:10px;margin:6px 0;border-left:5px solid var(--warning)}
 .flex{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .flex-between{display:flex;justify-content:space-between;align-items:center;gap:6px}
 .mt-1{margin-top:8px}.mb-1{margin-bottom:6px}.text-muted{color:var(--muted);font-size:.8rem}.w-full{width:100%}
@@ -204,7 +203,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 <button class="tab-btn" data-tab="tabPlan"><i class="fas fa-clock"></i><span>Suunnitelma</span></button>
 <button class="tab-btn" data-tab="tabStats"><i class="fas fa-chart-line"></i><span>Tilastot</span></button>
 <button class="tab-btn" data-tab="tabTimer"><i class="fas fa-stopwatch"></i><span>Timer</span></button>
-<button class="tab-btn" data-tab="tabFood"><i class="fas fa-utensils"></i><span>Ruoka</span></button>
 <button class="tab-btn" data-tab="tabProfile"><i class="fas fa-user"></i><span>Profiili</span></button>
 </div>
 
@@ -353,21 +351,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 </div>
 </div>
 
-<div id="tabFood" class="tab-content">
-<div class="page-header"><div class="mini-brand"><i class="fas fa-bolt"></i><span class="mini-brand-text">FITNOVA</span><span style="color:var(--muted);font-size:.72rem;margin-left:4px">/ Ruoka</span></div></div>
-<div class="card">
-<div class="card-title"><i class="fas fa-utensils"></i> Ruokapäiväkirja</div>
-<div class="row"><input type="date" id="foodDate" style="flex:1"><button class="btn btn-primary" id="addFoodEntry"><i class="fas fa-plus"></i> Lisää</button></div>
-<textarea id="foodText" placeholder="Kirjoita päivän ruuat..." class="mt-1" rows="3"></textarea>
-<div class="row mt-1">
-<input type="number" id="foodProtein" placeholder="Proteiini (g)" inputmode="decimal" style="flex:1">
-<input type="number" id="foodCarbs" placeholder="Hiilihydraatit (g)" inputmode="decimal" style="flex:1">
-<input type="number" id="foodFats" placeholder="Rasvat (g)" inputmode="decimal" style="flex:1">
-</div>
-<div id="foodList" class="mt-1"></div>
-</div>
-</div>
-
 <div id="tabProfile" class="tab-content">
 <div class="page-header"><div class="mini-brand"><i class="fas fa-bolt"></i><span class="mini-brand-text">FITNOVA</span><span style="color:var(--muted);font-size:.72rem;margin-left:4px">/ Profiili</span></div></div>
 <div class="card">
@@ -406,8 +389,8 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 
 <script>
 (function(){
-  var STORAGE_KEY='fitnova_v15';
-  var data=JSON.parse(localStorage.getItem(STORAGE_KEY))||{logs:{},plans:{},food:[],sleep:[],profile:{},theme:'light',timerSettings:{sound:'classic',volume:70}};
+  var STORAGE_KEY='fitnova_v16';
+  var data=JSON.parse(localStorage.getItem(STORAGE_KEY))||{logs:{},plans:{},sleep:[],profile:{},theme:'light',timerSettings:{sound:'classic',volume:70}};
   if(!data.profile)data.profile={};
   if(!data.sleep)data.sleep=[];
   if(!data.timerSettings)data.timerSettings={sound:'classic',volume:70};
@@ -557,7 +540,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
   var DAY_NAMES=['Ma','Ti','Ke','To','Pe','La','Su'];
   var aiPreview=null;
 
-  // AI-funktiot
   function selectAIProgram(goal,level,split,days){
     if(split==='auto'){
       if(level==='aloittelija'){
@@ -768,7 +750,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     },300);
   }
 
-  // Timer
   var timerInterval=null;
   var timerSeconds=0;
   var timerRunning=false;
@@ -876,7 +857,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     document.getElementById('volumeValue').innerText=settings.volume+'%';
   }
 
-  // Render-funktiot
   function renderCalendar(){
     var weekDays=getWeekDays(currentWeekRef);
     var grid=document.getElementById('calendarGrid');
@@ -1122,7 +1102,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
       });
       container.innerHTML=history.length===0?'<div class="text-muted">Ei kirjauksia.</div>':history.map(function(h){return '<div style="background:var(--bg);border-radius:12px;padding:8px 10px;margin:4px 0;display:flex;gap:8px;flex-wrap:wrap;font-size:.8rem"><span><strong>'+formatDate(h.date)+'</strong></span><span>'+h.sets+' sarjaa</span><span>Max: '+h.maxWeight+'kg</span><span>Vol: '+Math.round(h.vol)+'kg</span></div>'}).join('');
     }
-    // Charts
     var weightData={};
     var volumeData={};
     Object.keys(data.logs).sort().forEach(function(date){
@@ -1151,27 +1130,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     var volumeCtx=document.getElementById('volumeChart').getContext('2d');
     if(volumeChart)volumeChart.destroy();
     volumeChart=new Chart(volumeCtx,{type:'bar',data:{labels:Object.keys(volumeData),datasets:[{label:'Volyymi (kg)',data:Object.values(volumeData),backgroundColor:'#22c55e'}]},options:{responsive:true,maintainAspectRatio:false}});
-  }
-
-  function renderFood(){
-    var container=document.getElementById('foodList');
-    container.innerHTML='';
-    if(data.food.length===0){container.innerHTML='<div class="text-muted">Ei merkintöjä.</div>';return}
-    var foods=data.food.slice().reverse();
-    foods.forEach(function(item,index){
-      var origIdx=data.food.length-1-index;
-      var div=document.createElement('div');
-      div.className='food-entry';
-      var macros=item.protein||item.carbs||item.fats?'<div class="text-muted" style="margin-top:4px;font-size:.75rem">P: '+(item.protein||0)+'g | HH: '+(item.carbs||0)+'g | R: '+(item.fats||0)+'g</div>':'';
-      div.innerHTML='<div class="flex-between"><strong style="font-size:.85rem">'+formatDate(item.date)+'</strong><button class="btn btn-danger btn-sm remove-food" data-idx="'+origIdx+'"><i class="fas fa-times"></i></button></div><div class="text-muted" style="white-space:pre-wrap;margin-top:4px;font-size:.8rem">'+item.text+'</div>'+macros;
-      container.appendChild(div);
-    });
-    container.querySelectorAll('.remove-food').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        data.food.splice(parseInt(this.dataset.idx),1);
-        saveData();
-      });
-    });
   }
 
   function renderProfile(){
@@ -1241,7 +1199,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     renderPlans();
     renderTemplates();
     renderStats();
-    renderFood();
     renderProfile();
     renderSleep();
     updateTimerDisplay();
@@ -1257,13 +1214,11 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     if(tabId==='tabLog')renderLogEntries(document.getElementById('logDate').value||getToday());
     if(tabId==='tabPlan')renderPlans();
     if(tabId==='tabStats')renderStats();
-    if(tabId==='tabFood')renderFood();
     if(tabId==='tabProfile'){renderProfile();renderSleep()}
     if(tabId==='tabCalendar')renderCalendar();
     if(tabId==='tabTimer')updateTimerDisplay();
   }
 
-  // Event listenerit
   document.querySelectorAll('.tab-btn').forEach(function(btn){
     btn.addEventListener('click',function(){switchTab(btn.dataset.tab)});
   });
@@ -1356,19 +1311,6 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     var dateStr=document.getElementById('planDate').value||getToday();
     data.plans[dateStr]={entries:[],isAiGenerated:false};
     saveData();
-  });
-
-  document.getElementById('addFoodEntry').addEventListener('click',function(){
-    var dateStr=document.getElementById('foodDate').value||getToday();
-    var text=document.getElementById('foodText').value.trim();
-    if(text){
-      data.food.push({date:dateStr,text:text,protein:document.getElementById('foodProtein').value,carbs:document.getElementById('foodCarbs').value,fats:document.getElementById('foodFats').value});
-      document.getElementById('foodText').value='';
-      document.getElementById('foodProtein').value='';
-      document.getElementById('foodCarbs').value='';
-      document.getElementById('foodFats').value='';
-      saveData();
-    }
   });
 
   document.getElementById('saveProfile').addEventListener('click',function(){
@@ -1496,10 +1438,8 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     }
   }
 
-  // Alustus
   document.getElementById('logDate').value=getToday();
   document.getElementById('planDate').value=getToday();
-  document.getElementById('foodDate').value=getToday();
   document.getElementById('sleepDate').value=getToday();
   document.getElementById('aiStartDate').value=getToday();
   document.documentElement.setAttribute('data-theme',data.theme||'light');
@@ -1510,4 +1450,3 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 </script>
 </body>
 </html>
-
