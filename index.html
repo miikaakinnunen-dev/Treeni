@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="fi">
 <head>
@@ -91,13 +92,17 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 .dot-yellow{background:var(--warning)}.dot-green{background:var(--success)}.dot-red{background:var(--danger)}.dot-gray{background:var(--muted)}
 .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin:10px 0}
 .cal-day-header{text-align:center;font-size:.62rem;font-weight:700;color:var(--muted);padding:2px 0;text-transform:uppercase}
-.cal-day{background:var(--card);border-radius:50%;padding:4px 2px;text-align:center;font-size:.72rem;font-weight:500;border:1px solid var(--border);cursor:pointer;aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42px}
+.cal-day{background:var(--card);border-radius:50%;padding:4px 2px;text-align:center;font-size:.72rem;font-weight:500;border:1px solid var(--border);cursor:pointer;aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:42px;transition:all .2s}
 .cal-day:active{transform:scale(.92)}
 .cal-day .date-num{font-weight:700;font-size:.9rem}
 .cal-day .dot{width:6px;height:6px;margin-top:2px}
 .cal-day.has-plan{border-color:var(--warning);background:rgba(234,179,8,.1)}
 .cal-day.done{border-color:var(--success);background:rgba(34,197,94,.1)}
 .cal-day.missed{border-color:var(--danger);background:rgba(239,68,68,.1)}
+/* NYKYINEN PÄIVÄ KOROSTUS */
+.cal-day.today{border:2.5px solid var(--primary);background:linear-gradient(135deg,rgba(59,130,246,.15),rgba(139,92,246,.15));box-shadow:0 0 0 2px rgba(59,130,246,.2);position:relative}
+.cal-day.today .date-num{color:var(--primary);font-weight:900}
+.cal-day.today::after{content:'';position:absolute;top:-3px;right:-3px;width:10px;height:10px;background:var(--primary);border-radius:50%;border:2px solid var(--card)}
 .stat-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;background:var(--bg);border-radius:18px;padding:10px}
 .stat-item{text-align:center;background:var(--card);border-radius:12px;padding:8px 4px}
 .stat-number{font-weight:700;font-size:1.25rem}
@@ -437,7 +442,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 
 <script>
 (function(){
-  var STORAGE_KEY='fitnova_v25';
+  var STORAGE_KEY='fitnova_v27';
   var data=JSON.parse(localStorage.getItem(STORAGE_KEY))||{logs:{},plans:{},sleep:[],profile:{},theme:'light',timerSettings:{sound:'classic',volume:70}};
   if(!data.profile)data.profile={};
   if(!data.sleep)data.sleep=[];
@@ -487,7 +492,62 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     renderAll();
   }
 
-  var ALL_EXERCISES=['Penkkipunnerrus','Viistopenkki','Pystypunnerrus','Punnerrus','Dipit','Ojentajapunnerrus','Lateral raise','Front raise','Cable crossover','Pec deck','Sotilaspenkki','Kasipainopunnerrus','Triceps pushdown','Skull crusher','Maastaveto','Leuanveto','Kulmasoutu','Ylatalja','Alatalja','Hauiskaanto','Face pull','Reverse fly','Hammer curl','Concentration curl','Rope pulldown','TRX-soutu','Tangon hauiskaanto','Kyykky','Jalkaprassi','Reiden ojennus','Reiden koukistus','Pohkeet','Bulgarian split squat','Hip thrust','Hack-kyykky','Lunges','Step-up','Romanian deadlift','Sumo deadlift','Pohjeistunta','Vatsarutistus','Lankku','Russian twist','Bicycle crunch','Leg raise','Ab wheel','Side plank','Dead bug','Juoksu','Soutu','Crosstrainer','Polkupyora','Naruhyppy','Burpee','Mountain climber','Hyppykyykky','Kettlebell swing','Battle rope','Box jump','Tire flip','Pike pushup','Handstand pushup','Hindu pushup','Archer pushup','Diamond pushup','Pull-up','Chin-up','Muscle-up','Ring dip','Pistol squat'];
+  var ALL_EXERCISES=[
+    'Penkkipunnerrus','Viistopenkki','Alaviistopenkki','Tasapenkki','Kasipainopenkki','Kasipainoviistopenkki','Kasipainoalaviistopenkki',
+    'Cable crossover','Pec deck','Butterfly','Chest fly','Konepenkkipunnerrus','Smith-penkkipunnerrus','Dipit (rinta)',
+    'Levea penkkipunnerrus','Kapea penkkipunnerrus','Punnerrus','Levea punnerrus','Kapea punnerrus','Timanttipunnerrus',
+    'Kaapelipunnerrus','Konepunnnerrus','Sotilaspenkki','Kasipainosotilaspenkki','Hammasharjapunnerrus',
+    'Leuanveto','Levea leuanveto','Kapea leuanveto','Chin-up','Hammer grip leuanveto','Assisted leuanveto',
+    'Kulmasoutu','Tangon kulmasoutu','Kasipaino kulmasoutu','T-kulmasoutu','Konekulmasoutu','Seated cable row',
+    'Ylatalja','Levea ylatalja','Kapea ylatalja','V-kahva ylatalja','Kasipaino ylatalja',
+    'Alatalja','Kapea alatalja','Levea alatalja','V-kahva alatalja',
+    'Face pull','Reverse fly','Rear delt fly','Maastaveto','Sumo maastaveto','Romanian deadlift','Trap bar deadlift',
+    'Good morning','Hyperextension','Selkaojennus','Selkavenytys',
+    'Pystypunnerrus','Kasipaino pystypunnerrus','Arnold press','Push press','Thruster',
+    'Lateral raise','Kasipaino lateral raise','Kaapeli lateral raise','Kone lateral raise',
+    'Front raise','Kasipaino front raise','Kaapeli front raise','Plate front raise',
+    'Reverse pec deck','Rear delt cable fly','Face pull naru','Upright row','Tangon upright row',
+    'Shrugs','Tangon shrugs','Kasipaino shrugs','Trap shrugs',
+    'Hauiskääntö','Tangon hauiskaanto','Kasipaino hauiskaanto','Vuorottainen hauiskaanto','Samanaikainen hauiskaanto',
+    'Hammer curl','Kasipaino hammer curl','Kaapeli hammer curl','Reverse curl','Reverse hammer curl',
+    'Concentration curl','Preacher curl','Spider curl','Incline curl','Cable curl','EZ-bar curl',
+    'Zottman curl','Drag curl','Bayesian curl','Scott curl',
+    'Ojentajapunnerrus','Ranskalainen punnerrus','Skull crusher','Tangon ojentajapunnerrus','EZ-bar skull crusher',
+    'Triceps pushdown','Naru pushdown','V-kahva pushdown','Kapea penkkipunnerrus','Diamond pushup',
+    'Overhead triceps extension','Kasipaino overhead extension','Rope overhead extension','Kickback','Dipit (ojentaja)',
+    'Close-grip bench press','JM press','Tate press','Rolling triceps extension',
+    'Kyykky','Takakyykky','Etukyykky','Goblet squat','Sumo kyykky','Bulgarian split squat','Pistol squat',
+    'Leg press','Jalkaprassi','Leg extension','Reiden ojennus','Leg curl','Reiden koukistus',
+    'Lunges','Kasipaino lunges','Tangon lunges','Walking lunges','Reverse lunges','Lateral lunges',
+    'Step-up','Kasipaino step-up','Box step-up','Hip thrust','Glute bridge','Kasipaino hip thrust',
+    'Romanian deadlift','Single leg RDL','Good morning','Nordic curl','Glute ham raise',
+    'Adductor machine','Abductor machine','Copenhagen plank','Clamshell',
+    'Pohkeet','Standing calf raise','Seated calf raise','Leg press calf raise','Donkey calf raise',
+    'Single leg calf raise','Pohjeistunta','Pohjeprassi',
+    'Vatsarutistus','Crunch','Bicycle crunch','Reverse crunch','Hanging leg raise','Knee raise',
+    'Plank','Lankku','Side plank','Plank tap','Ab wheel','Ab wheel rollout',
+    'Russian twist','Kasipaino Russian twist','Cable Russian twist','Woodchop','Cable woodchop',
+    'Dead bug','Bird dog','Superman','Hollow hold','L-sit','Dragon flag',
+    'Cable crunch','Kneeling cable crunch','Decline crunch','Weighted crunch',
+    'Pallof press','Anti-rotation press','Farmer walk','Suitcase carry',
+    'Juoksu','Kuntojuoksu','Interval juoksu','Soutu','Crosstrainer','Polkupyora','Maastopyoraily',
+    'Naruhyppy','Double under','Burpee','Mountain climber','High knees','Jumping jacks',
+    'Box jump','Broad jump','Sled push','Sled drag','Prowler push',
+    'Rope climb','Assault bike','Echo bike','Ski erg','Versaclimber',
+    'Swimming','Kayaking','Rowing machine','Stairmaster','Treadmill',
+    'Kettlebell swing','Kettlebell clean','Kettlebell snatch','Kettlebell press','Kettlebell squat',
+    'Turkish get-up','Goblet squat','Kettlebell row','Kettlebell lunge','Kettlebell halo',
+    'Battle rope','Slam ball','Med ball throw','Wall ball','Tire flip',
+    'Sledgehammer','Sandbag carry','Sandbag squat','Atlas stones','Log press',
+    'Ring dip','Muscle-up','Pull-up','Chin-up','Toes to bar','L-sit pull-up',
+    'Handstand pushup','Pike pushup','Archer pushup','Diamond pushup','Wide pushup',
+    'Pseudo planche pushup','One arm pushup','Clapping pushup','Explosive pushup',
+    'Front lever','Back lever','Human flag','Planche','L-sit','V-sit',
+    'Venytys','Dynaaminen venytys','Staattinen venytys','Foam rolling','Mobility work',
+    'Hip mobility','Shoulder mobility','Ankle mobility','Thoracic mobility','Cat-cow',
+    'World greatest stretch','Pigeon pose','Downward dog','Child pose','Cobra stretch',
+    'Lepo','Palautuminen','Aktiivinen lepo','Kevyt liikunta','Kävely','Uinti','Jooga','Pilates'
+  ];
 
   function createEntry(exercise,sets,reps,weight){
     var s=parseInt(sets)||3;
@@ -630,6 +690,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     updateWorkoutTimerDisplay();
     updateWorkoutTimerSaved(dateStr);
     renderLogEntries(dateStr);
+    renderCalendar();
   }
 
   function resetWorkoutTimer(){
@@ -665,6 +726,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
     updateWorkoutTimerDisplay();
     updateWorkoutTimerSaved(dateStr);
     renderLogEntries(dateStr);
+    renderCalendar();
     input.value='';
   }
 
@@ -1103,6 +1165,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
       if(data.logs[dateStr].entries.length===0)delete data.logs[dateStr];
       saveNow();
       renderLogEntries(dateStr);
+      renderCalendar();
     } else if(action==='toggle-set'){
       var idx=parseInt(target.dataset.idx);
       var set=parseInt(target.dataset.set);
@@ -1117,6 +1180,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
 
   function renderCalendar(){
     var weekDays=getWeekDays(currentWeekRef);
+    var todayStr=getToday();
     var grid=document.getElementById('calendarGrid');
     grid.innerHTML='';
     DAY_NAMES.forEach(function(name){
@@ -1134,6 +1198,10 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
       else if(status==='missed')missed++;
       var div=document.createElement('div');
       div.className='cal-day'+(status==='plan'?' has-plan':status==='done'?' done':status==='missed'?' missed':'');
+      // KOROSTUS: jos päivä on tänään, lisää "today"-luokka
+      if(day===todayStr){
+        div.classList.add('today');
+      }
       div.innerHTML='<span class="date-num">'+new Date(day+'T12:00:00').getDate()+'</span><span class="dot" style="background:'+(status==='plan'?'var(--warning)':status==='done'?'var(--success)':status==='missed'?'var(--danger)':'transparent')+'"></span>';
       div.addEventListener('click',function(){
         document.getElementById('logDate').value=day;
@@ -1169,6 +1237,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
           document.getElementById('logDate').value=weekDays[0];
           currentLogDate=weekDays[0];
           switchTab('tabLog');
+          renderCalendar();
         }
       });
       container.appendChild(div);
@@ -1380,6 +1449,7 @@ select:focus,input:focus,textarea:focus{outline:2px solid var(--primary);border-
       aiPreview=null;
       saveNow();
       switchTab('tabLog');
+      renderCalendar();
     } else if(action==='regen-ai'){
       aiPreview=null;
       generateAIPlan();
