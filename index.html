@@ -29,6 +29,7 @@ input:focus,select:focus{outline:none;border-color:#3b82f6}
 .btn-primary{background:#3b82f6;color:#fff}
 .btn-success{background:#22c55e;color:#fff}
 .btn-danger{background:#ef4444;color:#fff}
+.btn-warning{background:#f59e0b;color:#fff}
 .btn-full{width:100%}
 .btn:active{transform:scale(.98)}
 .add-btn{background:#f1f5f9;border:2px dashed #cbd5e1;color:#64748b;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;width:100%;margin-top:8px;font-size:.9rem}
@@ -40,9 +41,14 @@ input:focus,select:focus{outline:none;border-color:#3b82f6}
 .workout-item{border-left:4px solid #3b82f6;cursor:pointer;transition:.2s}
 .workout-item:hover{background:#f8fafc}
 .workout-item.expanded{border-left-color:#22c55e}
+.workout-item.locked{border-left-color:#94a3b8;opacity:.85}
 .workout-summary{display:flex;justify-content:space-between;align-items:center;padding:12px 0}
 .workout-date{font-size:.85rem;color:#64748b}
 .workout-name{font-size:1rem;font-weight:600}
+.workout-status{display:flex;align-items:center;gap:6px;font-size:.8rem;margin-top:4px}
+.status-badge{padding:3px 8px;border-radius:12px;font-size:.75rem;font-weight:600}
+.status-open{background:#dbeafe;color:#1e40af}
+.status-locked{background:#e2e8f0;color:#475569}
 .workout-arrow{font-size:1.2rem;color:#94a3b8;transition:transform .2s}
 .workout-item.expanded .workout-arrow{transform:rotate(180deg)}
 .workout-details{padding:0 0 12px 0;display:none}
@@ -50,8 +56,14 @@ input:focus,select:focus{outline:none;border-color:#3b82f6}
 .exercise-item{margin-bottom:12px;padding:10px;background:#f8fafc;border-radius:8px}
 .exercise-name{font-weight:600;font-size:.95rem;margin-bottom:6px;color:#1e293b}
 .set-info{font-size:.85rem;color:#64748b;margin-left:12px;padding:3px 0}
-.delete-btn{background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:1.1rem;padding:8px;position:absolute;right:8px;top:8px}
-.workout-item{position:relative}
+.set-info.filled{color:#1e293b;font-weight:500}
+.delete-btn{background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:1.1rem;padding:8px}
+.edit-btn{background:#3b82f6;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:.85rem}
+.edit-btn:hover{background:#2563eb}
+.lock-btn{background:#22c55e;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:.85rem;margin-top:8px}
+.lock-btn:hover{background:#16a34a}
+.unlock-btn{background:#64748b;color:#fff;border:none;padding:8px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:.85rem;margin-top:8px}
+.unlock-btn:hover{background:#475569}
 .empty{text-align:center;padding:40px;color:#94a3b8}
 .empty i{font-size:3rem;margin-bottom:12px;display:block}
 .filter{display:flex;gap:8px;margin-bottom:12px}
@@ -63,6 +75,8 @@ input:focus,select:focus{outline:none;border-color:#3b82f6}
 .export-btn{background:#3b82f6;color:#fff}
 .import-btn{background:#8b5cf6;color:#fff}
 .data-info{background:#f0f9ff;border:1px solid #bae6fd;border-radius:10px;padding:12px;margin-bottom:16px;font-size:.85rem;color:#0369a1}
+.editing-banner{background:#fef3c7;border:1px solid #fbbf24;border-radius:10px;padding:12px;margin-bottom:16px;font-size:.85rem;color:#92400e;display:flex;justify-content:space-between;align-items:center}
+.editing-banner button{background:#f59e0b;color:#fff;border:none;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:.8rem}
 @media(max-width:480px){
   .set-row{grid-template-columns:60px 60px 60px 36px;gap:6px}
   .set-row input{padding:6px;font-size:.85rem}
@@ -109,8 +123,9 @@ input:focus,select:focus{outline:none;border-color:#3b82f6}
   </div>
   
   <div id="pageLog" style="display:none">
+    <div id="editingBanner" style="display:none"></div>
     <div class="card">
-      <h2>Uusi treeni</h2>
+      <h2 id="logTitle">Uusi treeni</h2>
       <input type="date" id="workoutDate">
       <input type="text" id="workoutName" placeholder="Treenin nimi (esim. Push day)">
       <div id="exercisesList"></div>
@@ -123,10 +138,11 @@ input:focus,select:focus{outline:none;border-color:#3b82f6}
 </div>
 
 <script>
-const STORAGE_KEY='treenikirja_v5';
+const STORAGE_KEY='treenikirja_v7';
 let workouts=JSON.parse(localStorage.getItem(STORAGE_KEY))||[];
 let currentExercises=[];
 let expandedWorkouts=new Set();
+let editingWorkoutId=null;
 
 const exerciseBank = {
   "🟠 PUSH - Chest": [
@@ -149,7 +165,7 @@ const exerciseBank = {
     "Upright Row (Dumbbell)","Upright Row (Cable)","Shrug (Barbell)",
     "Shrug (Dumbbell)","Shrug (Smith)","Behind-the-Neck Press","Z-Press"
   ],
-  " PUSH - Triceps": [
+  "🟠 PUSH - Triceps": [
     "Triceps Pushdown (Rope)","Triceps Pushdown (Bar)","Triceps Pushdown (V-Bar)",
     "Overhead Triceps Extension (Cable)","Overhead Triceps Extension (Dumbbell)",
     "Overhead Triceps Extension (Barbell)","Skull Crusher","EZ-Bar Skull Crusher",
@@ -262,6 +278,67 @@ function toggleWorkout(id){
   renderWorkoutList();
 }
 
+function editWorkout(id){
+  const workout=workouts.find(w=>w.id===id);
+  if(!workout) return;
+  
+  editingWorkoutId=id;
+  currentExercises=workout.exercises.map(ex=>({
+    name:ex.name,
+    sets:ex.sets.map(s=>({reps:s.reps||'',weight:s.weight||''}))
+  }));
+  
+  document.getElementById('workoutDate').value=workout.date;
+  document.getElementById('workoutName').value=workout.name||'';
+  
+  document.getElementById('pageOverview').style.display='none';
+  document.getElementById('pageLog').style.display='block';
+  document.getElementById('navOverview').classList.remove('active');
+  document.getElementById('navLog').classList.add('active');
+  
+  const banner=document.getElementById('editingBanner');
+  banner.style.display='flex';
+  banner.innerHTML=`
+    <div>✏️ Muokataan treeniä: <strong>${workout.name||'Nimetön'}</strong> (${formatDate(workout.date)})</div>
+    <button onclick="cancelEdit()">Peruuta</button>
+  `;
+  
+  document.getElementById('logTitle').textContent='Muokkaa treeniä';
+  renderExercises();
+}
+
+window.cancelEdit=function(){
+  editingWorkoutId=null;
+  currentExercises=[];
+  document.getElementById('editingBanner').style.display='none';
+  document.getElementById('logTitle').textContent='Uusi treeni';
+  document.getElementById('workoutName').value='';
+  document.getElementById('workoutDate').value=new Date().toISOString().split('T')[0];
+  document.getElementById('pageOverview').style.display='block';
+  document.getElementById('pageLog').style.display='none';
+  document.getElementById('navLog').classList.remove('active');
+  document.getElementById('navOverview').classList.add('active');
+  renderWorkoutList();
+};
+
+function lockWorkout(id){
+  const workout=workouts.find(w=>w.id===id);
+  if(workout && confirm('Lukitse tämä treeni? Treeniä ei voi enää muokata.')){
+    workout.locked=true;
+    saveToStorage();
+    renderWorkoutList();
+  }
+}
+
+function unlockWorkout(id){
+  const workout=workouts.find(w=>w.id===id);
+  if(workout && confirm('Avaa lukitus? Treeniä voi taas muokata.')){
+    workout.locked=false;
+    saveToStorage();
+    renderWorkoutList();
+  }
+}
+
 function exportData(){
   if(workouts.length===0){
     alert('Ei treenejä vietävänä. Kirjaa ensin treeni!');
@@ -299,7 +376,6 @@ function importData(file){
     try{
       const imported=JSON.parse(e.target.result);
       
-      // Tarkista onko tiedosto oikeassa muodossa
       if(!imported.workouts||!Array.isArray(imported.workouts)){
         throw new Error('Virheellinen tiedostomuoto');
       }
@@ -344,12 +420,22 @@ function renderWorkoutList(){
   
   list.innerHTML=filtered.map(w=>{
     const isExpanded=expandedWorkouts.has(w.id);
+    const isLocked=w.locked===true;
+    
+    let statusBadge='';
+    if(isLocked){
+      statusBadge='<span class="status-badge status-locked">🔒 Lukittu</span>';
+    } else {
+      statusBadge='<span class="status-badge status-open">✏️ Muokattavissa</span>';
+    }
+    
     return `
-      <div class="card workout-item ${isExpanded?'expanded':''}" onclick="toggleWorkout('${w.id}')">
+      <div class="card workout-item ${isExpanded?'expanded':''} ${isLocked?'locked':''}" onclick="toggleWorkout('${w.id}')">
         <div class="workout-summary">
           <div>
             <div class="workout-date">${formatDate(w.date)}</div>
             <div class="workout-name">${w.name||'Nimetön treeni'}</div>
+            <div class="workout-status">${statusBadge}</div>
           </div>
           <div class="workout-arrow">▼</div>
         </div>
@@ -358,12 +444,20 @@ function renderWorkoutList(){
             ${w.exercises.map(ex=>`
               <div class="exercise-item">
                 <div class="exercise-name">${ex.name}</div>
-                ${ex.sets.map((s,i)=>`
-                  <div class="set-info">Sarja ${i+1}: ${s.reps} toistoa × ${s.weight} kg</div>
-                `).join('')}
+                ${ex.sets.map((s,i)=>{
+                  const isFilled=s.reps && s.weight;
+                  return `<div class="set-info ${isFilled?'filled':''}">Sarja ${i+1}: ${s.reps||'-'} toistoa × ${s.weight||'-'} kg</div>`;
+                }).join('')}
               </div>
             `).join('')}
-            <button class="delete-btn" onclick="event.stopPropagation();deleteWorkout('${w.id}')" title="Poista">🗑️</button>
+            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+              ${!isLocked?`<button class="edit-btn" onclick="event.stopPropagation();editWorkout('${w.id}')">✏️ Muokkaa</button>`:''}
+              ${isLocked?
+                `<button class="unlock-btn" onclick="event.stopPropagation();unlockWorkout('${w.id}')">🔓 Avaa lukitus</button>`:
+                `<button class="lock-btn" onclick="event.stopPropagation();lockWorkout('${w.id}')">✅ Merkitse valmiiksi</button>`
+              }
+              <button class="btn btn-danger" onclick="event.stopPropagation();deleteWorkout('${w.id}')" style="flex:1">🗑️ Poista</button>
+            </div>
           </div>
         `:''}
       </div>
@@ -381,6 +475,9 @@ window.deleteWorkout=function(id){
 };
 
 window.toggleWorkout=toggleWorkout;
+window.editWorkout=editWorkout;
+window.lockWorkout=lockWorkout;
+window.unlockWorkout=unlockWorkout;
 
 window.addExerciseRow=function(){
   currentExercises.push({name:'',sets:[{reps:'',weight:''}]});
@@ -474,8 +571,7 @@ function saveWorkout(){
     return;
   }
   
-  const workout={
-    id:generateId(),
+  const workoutData={
     date:date,
     name:name,
     exercises:validExercises.map(ex=>({
@@ -487,18 +583,42 @@ function saveWorkout(){
     }))
   };
   
-  workouts.push(workout);
+  if(editingWorkoutId){
+    // Päivitä olemassa oleva treeni
+    const idx=workouts.findIndex(w=>w.id===editingWorkoutId);
+    if(idx!==-1){
+      workouts[idx]={...workouts[idx],...workoutData};
+    }
+    editingWorkoutId=null;
+    document.getElementById('editingBanner').style.display='none';
+    document.getElementById('logTitle').textContent='Uusi treeni';
+    alert('Treeni päivitetty!');
+  } else {
+    // Luo uusi treeni
+    workouts.push({
+      id:generateId(),
+      locked:false,
+      ...workoutData
+    });
+    alert('Treeni tallennettu!');
+  }
+  
   saveToStorage();
   
   document.getElementById('workoutName').value='';
   currentExercises=[];
   renderExercises();
   
-  alert('Treeni tallennettu!');
   document.getElementById('navOverview').click();
 }
 
 document.getElementById('navOverview').addEventListener('click',function(){
+  editingWorkoutId=null;
+  currentExercises=[];
+  document.getElementById('editingBanner').style.display='none';
+  document.getElementById('logTitle').textContent='Uusi treeni';
+  document.getElementById('workoutName').value='';
+  document.getElementById('workoutDate').value=new Date().toISOString().split('T')[0];
   document.getElementById('pageOverview').style.display='block';
   document.getElementById('pageLog').style.display='none';
   this.classList.add('active');
@@ -507,11 +627,21 @@ document.getElementById('navOverview').addEventListener('click',function(){
 });
 
 document.getElementById('navLog').addEventListener('click',function(){
+  if(editingWorkoutId){
+    if(!confirm('Olet muokkaamassa treeniä. Haluatko peruuttaa muutokset?')){
+      return;
+    }
+    editingWorkoutId=null;
+    currentExercises=[];
+    document.getElementById('editingBanner').style.display='none';
+    document.getElementById('logTitle').textContent='Uusi treeni';
+  }
   document.getElementById('pageOverview').style.display='none';
   document.getElementById('pageLog').style.display='block';
   this.classList.add('active');
   document.getElementById('navOverview').classList.remove('active');
   document.getElementById('workoutDate').value=new Date().toISOString().split('T')[0];
+  renderExercises();
 });
 
 document.getElementById('exportBtn').addEventListener('click',exportData);
@@ -525,7 +655,6 @@ document.getElementById('importFile').addEventListener('change',function(e){
   if(file){
     importData(file);
   }
-  // Tyhjennä input jotta sama tiedosto voidaan tuoda uudelleen
   e.target.value='';
 });
 
