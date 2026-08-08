@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fi">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,11 +16,12 @@ body{background:#f5f7fa;color:#1e293b;min-height:100vh}
 .nav button.active{background:#1e293b;color:#fff}
 .card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,.05)}
 .card h2{font-size:1.1rem;margin-bottom:12px;color:#1e293b}
-input,select{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:8px;font-size:1rem;margin-bottom:10px;font-family:inherit}
+input,select{width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:8px;font-size:1rem;margin-bottom:10px;font-family:inherit;background:#fff}
 input:focus,select:focus{outline:none;border-color:#3b82f6}
 .exercise-row{background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:8px}
-.exercise-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.exercise-header input{flex:1;margin:0;margin-right:8px}
+.exercise-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px}
+.exercise-header input{flex:1;margin:0}
+.exercise-header select{flex:1;margin:0;font-size:.9rem}
 .set-row{display:grid;grid-template-columns:80px 80px 80px 40px;gap:8px;margin-bottom:6px;align-items:center}
 .set-row input{margin:0;padding:8px;font-size:.9rem}
 .set-num{font-weight:600;color:#64748b;text-align:center;font-size:.9rem}
@@ -28,11 +29,14 @@ input:focus,select:focus{outline:none;border-color:#3b82f6}
 .btn-primary{background:#3b82f6;color:#fff}
 .btn-success{background:#22c55e;color:#fff}
 .btn-danger{background:#ef4444;color:#fff}
-.btn-secondary{background:#e2e8f0;color:#1e293b}
 .btn-full{width:100%}
 .btn:active{transform:scale(.98)}
-.add-btn{background:#f1f5f9;border:2px dashed #cbd5e1;color:#64748b;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;width:100%;margin-top:8px}
+.add-btn{background:#f1f5f9;border:2px dashed #cbd5e1;color:#64748b;padding:12px;border-radius:8px;cursor:pointer;font-weight:600;width:100%;margin-top:8px;font-size:.9rem}
 .add-btn:hover{background:#e2e8f0}
+.remove-exercise-btn{background:#fee2e2;border:none;color:#ef4444;padding:8px 12px;border-radius:6px;cursor:pointer;font-weight:600;font-size:.85rem;white-space:nowrap}
+.remove-exercise-btn:hover{background:#fecaca}
+.remove-set-btn{background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:1.1rem;padding:4px}
+.remove-set-btn:hover{color:#b91c1c}
 .workout-item{border-left:4px solid #3b82f6}
 .workout-date{font-size:.85rem;color:#64748b;margin-bottom:4px}
 .workout-name{font-size:1.1rem;font-weight:600;margin-bottom:8px}
@@ -44,6 +48,7 @@ input:focus,select:focus{outline:none;border-color:#3b82f6}
 .filter{display:flex;gap:8px;margin-bottom:12px}
 .filter input{flex:1;margin:0}
 .delete-btn{background:transparent;border:none;color:#ef4444;cursor:pointer;font-size:1.2rem;padding:4px 8px}
+.category-label{font-size:.75rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;margin-top:8px}
 @media(max-width:480px){
   .set-row{grid-template-columns:60px 60px 60px 36px;gap:6px}
   .set-row input{padding:6px;font-size:.85rem}
@@ -76,7 +81,7 @@ input:focus,select:focus{outline:none;border-color:#3b82f6}
     <div class="card">
       <h2>Uusi treeni</h2>
       <input type="date" id="workoutDate">
-      <input type="text" id="workoutName" placeholder="Treenin nimi (esim. Rinta & ojentajat)">
+      <input type="text" id="workoutName" placeholder="Treenin nimi (esim. Push day)">
       <div id="exercisesList"></div>
       <button class="add-btn" id="addExercise">+ Lisää liike</button>
       <div style="margin-top:16px;display:flex;gap:8px">
@@ -87,9 +92,314 @@ input:focus,select:focus{outline:none;border-color:#3b82f6}
 </div>
 
 <script>
-const STORAGE_KEY='treenikirja_v1';
+const STORAGE_KEY='treenikirja_v3';
 let workouts=JSON.parse(localStorage.getItem(STORAGE_KEY))||[];
 let currentExercises=[];
+
+const exerciseBank = {
+  "🟠 PUSH - Chest": [
+    "Barbell Bench Press",
+    "Incline Barbell Bench Press",
+    "Decline Barbell Bench Press",
+    "Flat Dumbbell Press",
+    "Incline Dumbbell Press",
+    "Decline Dumbbell Press",
+    "Dumbbell Fly",
+    "Incline Dumbbell Fly",
+    "Cable Fly (High)",
+    "Cable Fly (Low)",
+    "Cable Crossover",
+    "Pec Deck / Machine Fly",
+    "Chest Press Machine",
+    "Smith Machine Bench Press",
+    "Push-Up",
+    "Wide Push-Up",
+    "Diamond Push-Up",
+    "Incline Push-Up",
+    "Decline Push-Up",
+    "Archer Push-Up",
+    "One-Arm Push-Up",
+    "Clapping Push-Up",
+    "Dips (Chest)",
+    "Svend Press",
+    "Hex Press",
+    "Landmine Press",
+    "Floor Press",
+    "Close-Grip Bench Press",
+    "Paused Bench Press",
+    "Spoto Press"
+  ],
+  " PUSH - Shoulders": [
+    "Overhead Press (Barbell)",
+    "Overhead Press (Dumbbell)",
+    "Arnold Press",
+    "Seated Shoulder Press",
+    "Standing Shoulder Press",
+    "Push Press",
+    "Landmine Shoulder Press",
+    "Lateral Raise (Dumbbell)",
+    "Lateral Raise (Cable)",
+    "Lateral Raise (Machine)",
+    "Front Raise (Dumbbell)",
+    "Front Raise (Barbell)",
+    "Front Raise (Plate)",
+    "Reverse Pec Deck",
+    "Reverse Fly (Dumbbell)",
+    "Rear Delt Fly (Cable)",
+    "Face Pull",
+    "Upright Row (Barbell)",
+    "Upright Row (Dumbbell)",
+    "Upright Row (Cable)",
+    "Shrug (Barbell)",
+    "Shrug (Dumbbell)",
+    "Shrug (Smith)",
+    "Behind-the-Neck Press",
+    "Z-Press"
+  ],
+  "🟠 PUSH - Triceps": [
+    "Triceps Pushdown (Rope)",
+    "Triceps Pushdown (Bar)",
+    "Triceps Pushdown (V-Bar)",
+    "Overhead Triceps Extension (Cable)",
+    "Overhead Triceps Extension (Dumbbell)",
+    "Overhead Triceps Extension (Barbell)",
+    "Skull Crusher",
+    "EZ-Bar Skull Crusher",
+    "Triceps Kickback",
+    "Close-Grip Bench Press",
+    "Diamond Push-Up",
+    "Dips (Triceps)",
+    "JM Press",
+    "Tate Press",
+    "Triceps Extension Machine",
+    "Rope Overhead Extension",
+    "Single-Arm Kickback",
+    "Lying Triceps Extension",
+    "Cross-Body Triceps Extension",
+    "Triceps Dip Machine"
+  ],
+  "🔵 PULL - Back": [
+    "Pull-Up (Wide Grip)",
+    "Pull-Up (Close Grip)",
+    "Chin-Up",
+    "Neutral Grip Pull-Up",
+    "Assisted Pull-Up",
+    "Weighted Pull-Up",
+    "Lat Pulldown (Wide)",
+    "Lat Pulldown (Close)",
+    "Lat Pulldown (Reverse)",
+    "Straight-Arm Pulldown",
+    "Barbell Row",
+    "Pendlay Row",
+    "Bent-Over Row",
+    "One-Arm Dumbbell Row",
+    "Chest-Supported Row",
+    "Seated Cable Row",
+    "Seated Cable Row (Wide)",
+    "T-Bar Row",
+    "Inverted Row",
+    "Meadows Row",
+    "Seal Row",
+    "Deadlift (Conventional)",
+    "Romanian Deadlift",
+    "Sumo Deadlift",
+    "Trap Bar Deadlift",
+    "Stiff-Leg Deadlift",
+    "Rack Pull",
+    "Good Morning",
+    "Hyperextension",
+    "Reverse Hyperextension",
+    "Cable Pullover",
+    "Dumbbell Pullover",
+    "Meadows Row",
+    "Chest-Supported T-Bar Row",
+    "Machine Row"
+  ],
+  " PULL - Biceps": [
+    "Barbell Curl",
+    "EZ-Bar Curl",
+    "Dumbbell Curl",
+    "Alternating Dumbbell Curl",
+    "Hammer Curl",
+    "Cross-Body Hammer Curl",
+    "Preacher Curl",
+    "Incline Dumbbell Curl",
+    "Concentration Curl",
+    "Cable Curl",
+    "Cable Hammer Curl",
+    "Spider Curl",
+    "Drag Curl",
+    "Zottman Curl",
+    "Reverse Curl",
+    "Wrist Curl",
+    "Reverse Wrist Curl",
+    "Bayesian Curl",
+    "Incline Hammer Curl",
+    "Cheat Curl",
+    "21s Curl",
+    "Machine Bicep Curl",
+    "Scott Curl",
+    "Behind-the-Back Cable Curl"
+  ],
+  "🟢 LEGS - Quads": [
+    "Barbell Back Squat",
+    "Barbell Front Squat",
+    "Goblet Squat",
+    "Bulgarian Split Squat",
+    "Lunges (Walking)",
+    "Reverse Lunges",
+    "Forward Lunges",
+    "Lateral Lunges",
+    "Leg Press",
+    "Hack Squat",
+    "Leg Extension",
+    "Sissy Squat",
+    "Pistol Squat",
+    "Box Squat",
+    "Sumo Squat",
+    "Zercher Squat",
+    "Overhead Squat",
+    "Anderson Squat",
+    "Tempo Squat",
+    "Paused Squat",
+    "Heels-Elevated Squat",
+    "Step-Up",
+    "Wall Sit",
+    "Leg Press (Single Leg)",
+    "Squat Machine"
+  ],
+  " LEGS - Hamstrings": [
+    "Romanian Deadlift",
+    "Stiff-Leg Deadlift",
+    "Lying Leg Curl",
+    "Seated Leg Curl",
+    "Nordic Curl",
+    "Glute-Ham Raise",
+    "Good Morning",
+    "Single-Leg RDL",
+    "Swiss Ball Leg Curl",
+    "Slider Leg Curl",
+    "Kettlebell Swing",
+    "45° Back Extension (Hamstring Focus)",
+    "Reverse Hyperextension"
+  ],
+  " LEGS - Glutes": [
+    "Hip Thrust (Barbell)",
+    "Hip Thrust (Machine)",
+    "Glute Bridge",
+    "Single-Leg Hip Thrust",
+    "Cable Pull-Through",
+    "Kettlebell Swing",
+    "Glute Kickback (Cable)",
+    "Glute Kickback (Machine)",
+    "Frog Pump",
+    "Banded Glute Bridge",
+    "45° Back Extension (Glute Focus)",
+    "Reverse Hyperextension",
+    "Sumo Deadlift",
+    "Bulgarian Split Squat (Glute Focus)",
+    "Step-Up (High Box)"
+  ],
+  "🟢 LEGS - Calves": [
+    "Standing Calf Raise",
+    "Seated Calf Raise",
+    "Donkey Calf Raise",
+    "Leg Press Calf Raise",
+    "Smith Machine Calf Raise",
+    "Single-Leg Calf Raise",
+    "Jump Rope (Calves)",
+    "Box Jump",
+    "Farmer's Walk on Toes",
+    "Calf Raise Machine"
+  ],
+  " CORE - Abs": [
+    "Crunch",
+    "Sit-Up",
+    "Bicycle Crunch",
+    "Reverse Crunch",
+    "Leg Raise (Lying)",
+    "Hanging Leg Raise",
+    "Hanging Knee Raise",
+    "Ab Wheel Rollout",
+    "Cable Crunch",
+    "Woodchop (Cable)",
+    "Pallof Press",
+    "Dead Bug",
+    "Hollow Hold",
+    "V-Up",
+    "L-Sit",
+    "Dragon Flag",
+    "Toe Touch",
+    "Flutter Kicks",
+    "Scissor Kicks",
+    "Mountain Climber",
+    "Plank (Front)",
+    "Side Plank",
+    "Plank with Shoulder Tap",
+    "Ab Rollout (Barbell)",
+    "Russian Twist",
+    "Cable Woodchop (High-Low)",
+    "Cable Woodchop (Low-High)",
+    "Weighted Sit-Up",
+    "Decline Sit-Up"
+  ],
+  "🟡 CORE - Lower Back": [
+    "Hyperextension",
+    "Reverse Hyperextension",
+    "Good Morning",
+    "Bird Dog",
+    "Superman",
+    "Back Extension Machine",
+    "45° Back Extension",
+    "Rack Pull",
+    "Deadlift (Light)",
+    "Swiss Ball Back Extension"
+  ],
+  "⚫ CARDIO & CONDITIONING": [
+    "Running (Treadmill)",
+    "Running (Outdoor)",
+    "Cycling (Stationary)",
+    "Cycling (Outdoor)",
+    "Rowing Machine",
+    "Swimming",
+    "Jump Rope",
+    "Burpees",
+    "Mountain Climbers",
+    "High Knees",
+    "Jumping Jacks",
+    "Box Jumps",
+    "Sled Push",
+    "Sled Pull / Drag",
+    "Assault Bike",
+    "Stairmaster",
+    "Elliptical",
+    "Battle Ropes",
+    "Kettlebell Swing",
+    "Thrusters",
+    "Farmer's Walk",
+    "Yoke Walk",
+    "Tire Flip",
+    "Sledgehammer Swings",
+    "Rowing (Outdoor)",
+    "Stair Climbing",
+    "Incline Walking",
+    "Sprint Intervals",
+    "HIIT Circuit",
+    "Tabata"
+  ]
+};
+
+function buildExerciseOptions(){
+  let html='<option value="">-- Valitse liike --</option>';
+  for(const [category, exercises] of Object.entries(exerciseBank)){
+    html+=`<optgroup label="${category}">`;
+    exercises.forEach(ex=>{
+      html+=`<option value="${ex}">${ex}</option>`;
+    });
+    html+=`</optgroup>`;
+  }
+  return html;
+}
 
 function saveToStorage(){
   localStorage.setItem(STORAGE_KEY,JSON.stringify(workouts));
@@ -100,7 +410,7 @@ function generateId(){
 }
 
 function formatDate(dateStr){
-  const d=new Date(dateStr);
+  const d=new Date(dateStr+'T12:00:00');
   return d.toLocaleDateString('fi-FI',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 }
 
@@ -143,54 +453,71 @@ window.deleteWorkout=function(id){
   }
 };
 
-function addExerciseRow(){
+window.addExerciseRow=function(){
   currentExercises.push({name:'',sets:[{reps:'',weight:''}]});
   renderExercises();
-}
+};
 
-function removeExercise(idx){
-  currentExercises.splice(idx,1);
-  renderExercises();
-}
+window.removeExercise=function(idx){
+  if(confirm('Poista tämä liike?')){
+    currentExercises.splice(idx,1);
+    renderExercises();
+  }
+};
 
-function addSet(exIdx){
+window.addSet=function(exIdx){
   currentExercises[exIdx].sets.push({reps:'',weight:''});
   renderExercises();
-}
+};
 
-function removeSet(exIdx,setIdx){
+window.removeSet=function(exIdx,setIdx){
   currentExercises[exIdx].sets.splice(setIdx,1);
   renderExercises();
-}
+};
 
-function updateExerciseName(idx,value){
+window.updateExerciseName=function(idx,value){
   currentExercises[idx].name=value;
-}
+};
 
-function updateSet(exIdx,setIdx,field,value){
+window.selectExercise=function(idx,value){
+  if(value){
+    currentExercises[idx].name=value;
+    const nameInput=document.getElementById('exName-'+idx);
+    if(nameInput)nameInput.value=value;
+  }
+};
+
+window.updateSet=function(exIdx,setIdx,field,value){
   currentExercises[exIdx].sets[setIdx][field]=value;
-}
+};
 
 function renderExercises(){
   const container=document.getElementById('exercisesList');
+  if(currentExercises.length===0){
+    container.innerHTML='<div style="text-align:center;padding:20px;color:#94a3b8">Ei liikkeitä vielä. Lisää ensimmäinen liike alla olevalla napilla.</div>';
+    return;
+  }
+  const optionsHtml=buildExerciseOptions();
   container.innerHTML=currentExercises.map((ex,exIdx)=>`
     <div class="exercise-row">
+      <div class="category-label">Valitse liike kategoriasta tai kirjoita oma:</div>
+      <select onchange="selectExercise(${exIdx},this.value)">
+        ${optionsHtml}
+      </select>
       <div class="exercise-header">
-        <input type="text" placeholder="Liikkeen nimi" value="${ex.name}" 
-               onchange="updateExerciseName(${exIdx},this.value)" 
+        <input type="text" id="exName-${exIdx}" placeholder="Liikkeen nimi" value="${ex.name}" 
                oninput="updateExerciseName(${exIdx},this.value)">
-        <button class="delete-btn" onclick="removeExercise(${exIdx})">🗑️</button>
+        <button class="remove-exercise-btn" onclick="removeExercise(${exIdx})">️ Poista liike</button>
       </div>
+      <div class="category-label">Sarjat:</div>
       ${ex.sets.map((set,setIdx)=>`
         <div class="set-row">
           <div class="set-num">${setIdx+1}.</div>
           <input type="number" placeholder="Toistot" value="${set.reps}" 
-                 onchange="updateSet(${exIdx},${setIdx},'reps',this.value)"
                  oninput="updateSet(${exIdx},${setIdx},'reps',this.value)">
-          <input type="number" placeholder="Paino" value="${set.weight}" 
-                 onchange="updateSet(${exIdx},${setIdx},'weight',this.value)"
+          <input type="number" step="0.5" placeholder="Paino (kg)" value="${set.weight}" 
                  oninput="updateSet(${exIdx},${setIdx},'weight',this.value)">
-          <button class="delete-btn" onclick="removeSet(${exIdx},${setIdx})">✕</button>
+          <button class="remove-set-btn" onclick="removeSet(${exIdx},${setIdx})" title="Poista sarja">✕</button>
         </div>
       `).join('')}
       <button class="add-btn" onclick="addSet(${exIdx})" style="margin-top:8px;padding:8px">+ Lisää sarja</button>
@@ -234,7 +561,6 @@ function saveWorkout(){
   workouts.push(workout);
   saveToStorage();
   
-  // Tyhjennä lomake
   document.getElementById('workoutName').value='';
   currentExercises=[];
   renderExercises();
@@ -243,7 +569,6 @@ function saveWorkout(){
   document.getElementById('navOverview').click();
 }
 
-// Navigaatio
 document.getElementById('navOverview').addEventListener('click',function(){
   document.getElementById('pageOverview').style.display='block';
   document.getElementById('pageLog').style.display='none';
@@ -257,16 +582,13 @@ document.getElementById('navLog').addEventListener('click',function(){
   document.getElementById('pageLog').style.display='block';
   this.classList.add('active');
   document.getElementById('navOverview').classList.remove('active');
-  
-  // Aseta päivämääräksi tänään
   document.getElementById('workoutDate').value=new Date().toISOString().split('T')[0];
 });
 
-document.getElementById('addExercise').addEventListener('click',addExerciseRow);
+document.getElementById('addExercise').addEventListener('click',window.addExerciseRow);
 document.getElementById('saveWorkout').addEventListener('click',saveWorkout);
 document.getElementById('searchInput').addEventListener('input',renderWorkoutList);
 
-// Alustus
 document.getElementById('workoutDate').value=new Date().toISOString().split('T')[0];
 renderWorkoutList();
 renderExercises();
